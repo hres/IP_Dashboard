@@ -1,0 +1,196 @@
+---
+title: "HPFB Project Dashboard"
+output: 
+  html_document:
+    theme: flatly
+---
+
+```{r,echo=FALSE}
+knitr::opts_chunk$set(echo=FALSE)
+```
+
+Created on `r format(Sys.Date(),"%B %d,%Y")`
+
+# Overall Portofolio:
+## Project: `r ip_selected()$ips`
+
+This reports presents the project portofolio. Project health is evaluated by three components: Deliverability of funtional elements, budget status and schedule. An interactive dashboard can be found at [shiny.hres.ca/IP_dashboard](shiny.hres.ca/IP_dashboard)
+
+* Color code rules:
+   + *Red:* Significant course correction may be required. One or more of the intended project outputs may not be achieved. Identified changes may negatively impact the project's scope, cost or schedule and significant course correction may be required. 
+   + *Green:* The project is on track. The intended project outputs are expected to be achieved. Identified changes are not expected to negatively impact the project's scope, cost or schedule. 
+   + *Yellow:* Some course correction may be required. One or more of the intended project outputs may not be achieved. Identified changes may negatively impact the project's scope, cost or schedule and some course correction may be required.
+
+### Overall Project Health
+
+```{r,message=FALSE,warning=FALSE}
+ cols<-c('On Track'='#00B050','Caution'='#FFC000','Elevated Risk'='#C00000')
+    
+    df<-all_proj%>%
+      filter(IP %in% ip_selected()$ips)%>%
+      group_by(status)%>%
+      summarise(IP=paste(paste0('IP:',IP),collapse='\n'),count=n())
+    
+    p1<-ggplot(df,aes(x=status,y=count,fill=status))+geom_col()+
+      scale_fill_manual(values=cols)+
+      scale_y_continuous(breaks=c(0,1,2,3,4))+
+      geom_text(aes(y=count,label=IP),position=position_dodge(width=0.9),vjust=1.5)+
+      geom_text(aes(label=as.character(count)),position=position_dodge(width=0.9),vjust=-0.5)+
+      guides(fill=F)+
+      theme_minimal()+
+      theme(axis.title.x=element_blank(),
+            axis.text.x =element_text(size=12),
+            axis.title.y =element_blank(),
+            legend.title=element_blank()
+      )
+    
+    p1
+    
+```
+
+### Stage & Project Health
+```{r,fig.width=8}
+ cols<-c('On Track'='#00B050','Caution'='#FFC000','Elevated Risk'='#C00000')
+    
+    df2<-all_proj%>%
+      filter(IP %in% ip_selected()$ips)%>%
+      group_by(stage,status)%>%
+      summarise(IP=paste(paste0('IP:',IP),collapse='\n'),count=n())
+    
+    p2<-ggplot(df2,aes(x=stage,y=count,fill=status))+geom_col(position='dodge')+
+      scale_fill_manual(values=cols)+
+      scale_y_continuous(breaks=c(0,1,2,3,4))+
+      geom_text(aes(y=count-0.5,label=IP),position=position_dodge(width=0.9))+
+      geom_text(aes(label=as.character(count)),position=position_dodge(width=0.9),vjust=-0.5)+
+      theme_minimal()+
+      theme(axis.title.x=element_blank(),
+            axis.text.x =element_text(size=12),
+            axis.title.y =element_blank(),
+            legend.title=element_blank()
+      )
+    
+    p2
+```
+
+### Project functionality
+```{r,warning=FALSE,message=FALSE}
+summary<-functionality%>%
+      filter(IP %in% ip_selected()$ips)%>%
+      dplyr::count(`Functionality Met? (Y/N)`)
+    
+    colnames(summary)<-c('status','count')
+    
+    status_color<-data.frame(status=c("YES", "NO"),
+                             color=c( "#00b050","#C00000"))
+    
+    summary<-left_join(summary,status_color)
+    
+    plot_ly(summary,x=~status,y=~count,type='bar',
+            marker=list(color=as.character(summary$color)))%>%
+      layout(showlegend = F,
+             xaxis=list(title=''),
+             yaxis=list(title=''))%>%
+      add_annotations(x=summary$`Functionality Met? (Y/N)`,
+                      y=summary$count+3,
+                      text=summary$count,
+                      showarrow=F)
+```
+
+
+### Budget
+##### Overview
+```{r,fig.height=6}
+ds<-budget%>%filter(IP %in% ip_selected()$ips)%>%
+                 summarise(`Approved Budget`=sum(`Approved Budget`,na.rm=T),
+                `Expenditure to Date`=sum(expenditure_to_date,na.rm=T),
+                `Remaining budget projected`=sum(`Variance between remaining approved budget projected spending`,na.rm=T))%>%
+                 gather(cat)
+    
+    budget_plot2(ds)
+```
+
+##### Breakdown by Year
+```{r,fig.width=10}
+ ds2<-budget_yr%>%filter(IP %in% ip_selected()$ips)%>%
+                    group_by(var,Year)%>%
+                    summarise(value=sum(value,na.rm=T))
+    budget_plot(ds2)
+```
+
+```{r}
+ ds3<-budget_yr%>%filter(IP %in% ip_selected()$ips)%>%
+      group_by(var,Year)%>%
+      summarise(value=sum(value,na.rm=T))%>%
+      mutate(value=dollar(value))%>%
+      spread(var,value)
+    
+    DT::datatable(ds3)
+```
+
+
+### Schedule
+```{r,message=FALSE,warning=FALSE,fig.width=12}
+ df3<-schedule%>%filter(IP %in% ip_selected()$ips)
+    
+    if(input$selectdir=='All'){
+      df3<-df3%>%
+        filter(grepl('Go live',Major.Milestone,ignore.case=T))
+    }
+    
+    timeplot(df3)
+```
+
+```{r}
+df4<-schedule%>%filter(IP %in% ip_selected()$ips)%>%
+        filter(grepl('Start Date|End Date|Go live',Major.Milestone,ignore.case=T))%>%
+        select(Milestone=Major.Milestone,Date=Approved_finish_date)
+    
+    DT::datatable(df4,options = list(dom = 't'), rownames = FALSE)
+```
+
+
+#Individual Portofolio:
+```{r}
+project_health<-all_proj%>%filter(IP == ip_selected()$ip)%>%pull(status)
+project_stage<-all_proj%>%filter(IP ==input$selectip)%>%pull(stage)
+```
+
+## Project: `r ip_selected()$ip`
+
+### Project Health : `r project_health `
+### Stage : `r project_stage`
+
+### Budget
+##### Overview
+```{r,fig.height=6}
+ds4<-budget%>%filter(IP==input$selectip)%>%
+                 summarise(`Approved Budget`=sum(`Approved Budget`,na.rm=T),
+                           `Expenditure to Date`=sum(expenditure_to_date,na.rm=T),
+                           `Remaining Budget Projected`=sum(`Variance between remaining approved budget projected spending`,na.rm=T))%>%
+                 gather(cat)
+    
+    budget_plot2(ds4)
+```
+
+##### Breakdown by Year
+```{r,fig.width=10}
+ds5<-budget_yr%>%filter(IP==input$selectip)
+budget_plot(ds5)
+```
+
+```{r}
+ds6<-budget_yr%>%filter(IP==input$selectip)%>%
+                    mutate(value=dollar(value))%>%
+                    spread(var,value)
+    
+DT::datatable(ds6)
+```
+
+### Schedule
+```{r,message=FALSE,warning=FALSE,fig.width=12}
+df5<-schedule%>%filter(IP==ip_selected()$ip)
+    
+timeplot(df5)
+    
+```
+
