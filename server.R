@@ -11,7 +11,7 @@ shinyServer(function(input, output,session) {
   
 
   output$project_name<-renderUI({
-    project_name<-paste0('IP:',input$selectip)
+    project_name<-paste0('IP',input$selectip)
     h1(project_name, 
        style = "font-family: 'Arial';margin-left:50px;
         font-weight: 500; line-height: 1.1; 
@@ -171,6 +171,12 @@ shinyServer(function(input, output,session) {
   })
   
   
+  schedule_overview<-reactive({
+    schedule%>%filter(IP %in% ip_selected()$ips)%>%
+               group_by(Major.Milestone)%>%
+               filter(Approved_finish_date==Actual_date)%>%
+               ungroup()
+  })
   
   output$schedule_plt<-renderPlotly({
     df<-schedule%>%filter(IP==ip_selected()$ip)
@@ -184,7 +190,7 @@ shinyServer(function(input, output,session) {
   })
   
   output$schedule_plt2<-renderPlotly({
-    df<-schedule%>%filter(IP %in% ip_selected()$ips)
+    df<-schedule_overview()
     
     if(input$selectdir=='All'){
       df<-df%>%
@@ -204,17 +210,17 @@ shinyServer(function(input, output,session) {
   
   output$schedule_tb<-DT::renderDataTable({
     df<-schedule%>%filter(IP==ip_selected()$ip)%>%
-        filter(grepl('Start Date|End Date|Go live',Major.Milestone,ignore.case=T))%>%
-        select(Milestone=Major.Milestone,`Baseline Date`=Approved_finish_date)
+        #filter(grepl('Start Date|End Date|Go live',Major.Milestone,ignore.case=T))%>%
+        select(Milestone=Major.Milestone,Date=Approved_finish_date)
     
     DT::datatable(df,options = list(dom = 'tip'), rownames = FALSE)
   })
   
   
   output$schedule_tb2<-DT::renderDataTable({
-    df<-schedule%>%filter(IP %in% ip_selected()$ips)%>%
+    df<-schedule_overview()%>%
       filter(grepl('Start Date|End Date|Go live',Major.Milestone,ignore.case=T))%>%
-      select(Milestone=Major.Milestone,Date=Approved_finish_date)
+      select(Milestone=Major.Milestone,`Actual/Forecasted Finish Date`=Approved_finish_date)
     
     DT::datatable(df,options = list(dom = 'tip'), rownames = FALSE)
   })
@@ -228,7 +234,7 @@ shinyServer(function(input, output,session) {
     df<-all_proj%>%
       filter(IP %in% ip_selected()$ips)%>%
       group_by(status)%>%
-      summarise(IP=paste(paste0('IP:',IP),collapse='\n'),count=n())
+      summarise(IP=paste(paste0('IP',IP),collapse='\n'),count=n())
     
     p<-ggplot(df,aes(x=status,y=count,fill=status))+geom_col()+
       scale_fill_manual(values=cols)+
@@ -254,7 +260,7 @@ output$overall_stage2<-renderPlot({
     df<-all_proj%>%
       filter(IP %in% ip_selected()$ips)%>%
       group_by(stage,status)%>%
-      summarise(IP=paste(paste0('IP:',IP),collapse='\n'),count=n())
+      summarise(IP=paste(paste0('IP',IP),collapse='\n'),count=n())
     
     p<-ggplot(df,aes(x=stage,y=count,fill=status))+geom_col(position='dodge')+
       scale_fill_manual(values=cols)+

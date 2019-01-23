@@ -26,6 +26,7 @@ ip<-c(budget$IP[!is.na(budget$IP)])
 functionality$IP[functionality$IP=='346a']<-'346'
 #functionality$Scope.Health<-gsub('Test|-|\\s+','',functionality$Scope.Health)
 schedule$Approved_finish_date<-as.Date(as.character(schedule$Approved_finish_date))
+schedule$Actual_date<-as.Date(as.character(schedule$Actual_date))
 schedule$Major.Milestone<-paste0(schedule$IP,':',schedule$Major.Milestone)
 directorate<-c('All',all_proj$`Directorate Lead`)
 
@@ -33,12 +34,14 @@ directorate<-c('All',all_proj$`Directorate Lead`)
 #define Schedule.Health by criteria:
 schedule$`Schedule.Health`<-'Black'
 
-schedule_diff<-schedule%>%filter(Actual_date!=Approved_finish_date)%>%
+schedule_diff<-schedule%>%
+               filter(Approved_finish_date!=Actual_date)%>%
                mutate(`Schedule.Health`=case_when(difftime(Actual_date,Approved_finish_date,units='days')>60 ~ 'Yellow',
                                              difftime(Actual_date,Approved_finish_date,units='days')>180 ~ 'Red',
                                              TRUE ~ 'Green'))%>%
                mutate(Approved_finish_date=Actual_date)
-schedule<-rbind(schedule,schedule_diff)
+
+schedule<-rbind(schedule,schedule_diff)%>%arrange(Approved_finish_date)
 
 all_proj<-all_proj%>%
   mutate(status=case_when(`Overall Project Health`=='Red'~ 'Elevated Risk',

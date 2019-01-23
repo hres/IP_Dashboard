@@ -98,17 +98,6 @@ summary<-functionality%>%
 
 
 ### Budget
-##### Overview
-```{r,fig.height=6}
-ds<-budget%>%filter(IP %in% ip_selected()$ips)%>%
-                 summarise(`Approved Budget`=sum(`Approved Budget`,na.rm=T),
-                `Expenditure to Date`=sum(expenditure_to_date,na.rm=T),
-                `Remaining budget projected`=sum(`Variance between remaining approved budget projected spending`,na.rm=T))%>%
-                 gather(cat)
-    
-    budget_plot2(ds)
-```
-
 ##### Breakdown by Year
 ```{r,fig.width=10}
  ds2<-budget_yr%>%filter(IP %in% ip_selected()$ips)%>%
@@ -127,25 +116,40 @@ ds<-budget%>%filter(IP %in% ip_selected()$ips)%>%
     DT::datatable(ds3)
 ```
 
+##### Projections
+```{r,fig.height=6}
+ds<-budget%>%filter(IP %in% ip_selected()$ips)%>%
+                 summarise(`Approved Budget`=sum(`Approved Budget`,na.rm=T),
+                `Expenditure to Date`=sum(expenditure_to_date,na.rm=T),
+                `Remaining budget projected`=sum(`Variance between remaining approved budget projected spending`,na.rm=T))%>%
+                 gather(cat)
+    
+    budget_plot2(ds)
+```
+
 
 ### Schedule
 ```{r,message=FALSE,warning=FALSE,fig.width=12}
- df3<-schedule%>%filter(IP %in% ip_selected()$ips)
+df<-schedule_overview()
     
     if(input$selectdir=='All'){
-      df3<-df3%>%
+      df<-df%>%
         filter(grepl('Go live',Major.Milestone,ignore.case=T))
     }
     
-    timeplot(df3)
+    shiny::validate((
+      need(any(!is.na(df$Approved_finish_date)),'There is no information on project schedule')
+    ))
+    
+    timeplot(df)
 ```
 
 ```{r}
-df4<-schedule%>%filter(IP %in% ip_selected()$ips)%>%
-        filter(grepl('Start Date|End Date|Go live',Major.Milestone,ignore.case=T))%>%
-        select(Milestone=Major.Milestone,Date=Approved_finish_date)
+df<-schedule_overview()%>%
+      filter(grepl('Start Date|End Date|Go live',Major.Milestone,ignore.case=T))%>%
+      select(Milestone=Major.Milestone,`Actual/Forecasted Finish Date`=Approved_finish_date)
     
-    DT::datatable(df4,options = list(dom = 't'), rownames = FALSE)
+    DT::datatable(df,options = list(dom = 'tip'), rownames = FALSE)
 ```
 
 
@@ -161,17 +165,6 @@ project_stage<-all_proj%>%filter(IP ==input$selectip)%>%pull(stage)
 ### Stage : `r project_stage`
 
 ### Budget
-##### Overview
-```{r,fig.height=6}
-ds4<-budget%>%filter(IP==input$selectip)%>%
-                 summarise(`Approved Budget`=sum(`Approved Budget`,na.rm=T),
-                           `Expenditure to Date`=sum(expenditure_to_date,na.rm=T),
-                           `Remaining Budget Projected`=sum(`Variance between remaining approved budget projected spending`,na.rm=T))%>%
-                 gather(cat)
-    
-    budget_plot2(ds4)
-```
-
 ##### Breakdown by Year
 ```{r,fig.width=10}
 ds5<-budget_yr%>%filter(IP==input$selectip)
@@ -184,6 +177,17 @@ ds6<-budget_yr%>%filter(IP==input$selectip)%>%
                     spread(var,value)
     
 DT::datatable(ds6)
+```
+
+##### Projection
+```{r,fig.height=6}
+ds4<-budget%>%filter(IP==input$selectip)%>%
+                 summarise(`Approved Budget`=sum(`Approved Budget`,na.rm=T),
+                           `Expenditure to Date`=sum(expenditure_to_date,na.rm=T),
+                           `Remaining Budget Projected`=sum(`Variance between remaining approved budget projected spending`,na.rm=T))%>%
+                 gather(cat)
+    
+    budget_plot2(ds4)
 ```
 
 ### Schedule

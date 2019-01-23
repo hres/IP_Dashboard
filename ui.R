@@ -50,13 +50,13 @@ ui<-dashboardPage(
                            )),
                box(title='Project Portfolio Budget',
                        tabsetPanel(
-                           tabPanel(title='Overview',
-                                    plotOutput('budget_all2')),
                            tabPanel(title='Breakdown by Year',
                                     plotlyOutput('budget_plt2')),
                            tabPanel(title='Table',
-                                  DT::dataTableOutput('budget_tbl2')
-                           ))
+                                    DT::dataTableOutput('budget_tbl2')),
+                           tabPanel(title='Projections',
+                                    plotOutput('budget_all2'))
+                          )
                         )
               ),
               
@@ -89,12 +89,13 @@ ui<-dashboardPage(
       
       box(title='Project Budget',
           tabsetPanel(
-            tabPanel(title='Overview',
-                     plotOutput('budget_all')),
             tabPanel(title='Breakdown by Year',
                      plotlyOutput('budget_plt')),
             tabPanel(title='Table',
-                     DT::dataTableOutput('budget_tbl')))
+                     DT::dataTableOutput('budget_tbl')),
+            tabPanel(title='Projections',
+                     plotOutput('budget_all')))
+            
        )),
      
     fluidRow(

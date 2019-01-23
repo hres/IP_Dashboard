@@ -95,17 +95,17 @@ timeplot<-function(df){
   
   df$Schedule.Health <- factor(df$Schedule.Health, levels=status_levels, ordered=TRUE)
   
-  positions <- c(0.3, -0.3, 0.8, -0.8, 1.2, -1.2)
+  positions <- c(0.3, -0.3, 0.5, -0.5,0.9,-0.9,1.2, -1.2)
   directions <- c(1, -1)
   
   line_pos <- data.frame(
-    "date"=unique(df$Approved_finish_date),
+    "date"=sort(unique(df$Approved_finish_date),na.last=T),
     "position"=rep(positions, length.out=length(unique(df$Approved_finish_date))),
     "direction"=rep(directions, length.out=length(unique(df$Approved_finish_date)))
   )
   
   df<-left_join(df,line_pos,by=c('Approved_finish_date'='date'))
-  text_offset <- 0.08
+  text_offset <- 0.1
   
   df$month_count <- ave(df$Approved_finish_date==df$Approved_finish_date, df$Approved_finish_date, FUN=cumsum)
   df$text_position <- (df$month_count * text_offset * df$direction) + df$position
