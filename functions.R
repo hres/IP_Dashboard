@@ -67,7 +67,8 @@ budget_plot<-function(ds){
     labs(x='',y='')+
     theme_minimal()
   
-  ggplotly(p,tooltip = "text")%>%layout(margin=list(b=50),xaxis=list(tickangle=-45))
+  return(p)
+  #ggplotly(p,tooltip = "text")%>%layout(margin=list(b=50),xaxis=list(tickangle=-45))
 }
 
 budget_plot2<-function(ds){
@@ -147,5 +148,6 @@ timeplot<-function(df){
   # Show text for each milestone
   timeline_plot<-timeline_plot+geom_text(aes(y=text_position,label=Major.Milestone),size=3)
   
-  ggplotly(timeline_plot,height=450,tooltip=NULL)
+  return(timeline_plot)
+  #ggplotly(timeline_plot,height=450,tooltip=NULL)
 }

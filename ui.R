@@ -14,7 +14,8 @@ ui<-dashboardPage(
                      ),
                      conditionalPanel(
                        condition="input.sidebar == 'overview' ",
-                       selectInput('selectdir',label="Select a Directorate",choices=directorate)
+                       selectInput('selectdir',label="Select a Directorate",choices=directorate),
+                       actionButton('info','View IP Name',icon=icon('eye'))
                      ),
                      
                      br(),br(),
@@ -36,8 +37,12 @@ ui<-dashboardPage(
       
       tabItem(tabName='overview',
                fluidRow(
-                        uiOutput('project_name2'),
-               
+                       div(style='display: inline-block;vertical-align:center;width:100px;', uiOutput('project_name2')),
+                       div(style="display: inline-block;vertical-align:center; width: 300px;",HTML("<br>")),
+                       
+                       bsModal('modal','IP Name','info',tableOutput('ip_tbl'))
+               ),
+              fluidRow(
                box(title='Overall Project Health',plotOutput('overall2')),
                box(title='Project Health and Current Stage',plotOutput('overall_stage2'))
                ),

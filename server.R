@@ -9,9 +9,14 @@
 
 shinyServer(function(input, output,session) {
   
+  output$ip_tbl<-renderTable(
+    all_proj[,1:2]%>%mutate(IP=as.character(IP))
+  )
 
   output$project_name<-renderUI({
-    project_name<-paste0('IP',input$selectip)
+    name<-all_proj%>%filter(IP== input$selectip)%>%pull(`Project Name`)
+    
+    project_name<-paste0('IP',input$selectip,' ',name)
     h1(project_name, 
        style = "font-family: 'Arial';margin-left:50px;
         font-weight: 500; line-height: 1.1; 
@@ -139,7 +144,8 @@ shinyServer(function(input, output,session) {
   
   output$budget_plt<-renderPlotly({
     ds<-budget_yr%>%filter(IP==input$selectip)
-    budget_plot(ds)
+    p<-budget_plot(ds)
+    ggplotly(p,tooltip = "text")%>%layout(margin=list(b=50),xaxis=list(tickangle=-45))
   })
   
   output$budget_plt2<-renderPlotly({
@@ -147,7 +153,8 @@ shinyServer(function(input, output,session) {
     ds<-budget_yr%>%filter(IP %in% ip_selected()$ips)%>%
                     group_by(var,Year)%>%
                     summarise(value=sum(value,na.rm=T))
-    budget_plot(ds)
+    p<-budget_plot(ds)
+    ggplotly(p,tooltip = "text")%>%layout(margin=list(b=50),xaxis=list(tickangle=-45))
   })
   
   
@@ -185,8 +192,8 @@ shinyServer(function(input, output,session) {
       need(any(!is.na(df$Approved_finish_date)),'There is no information on project schedule')
     ))
     
-   timeplot(df)
-    
+  
+   ggplotly(timeplot(df),height=450,tooltip=NULL)
   })
   
   output$schedule_plt2<-renderPlotly({
@@ -201,8 +208,8 @@ shinyServer(function(input, output,session) {
       need(any(!is.na(df$Approved_finish_date)),'There is no information on project schedule')
     ))
     
-    timeplot(df)
     
+    ggplotly(timeplot(df),height=450,tooltip=NULL)
     
   })
   
@@ -315,7 +322,7 @@ output$overall_stage2<-renderPlot({
     
     
     output$downloadreport<-downloadHandler(
-      filename='report.html',
+      filename='report.pdf',
       
       content = function(file) {
         src <- normalizePath('report.Rmd')
@@ -327,7 +334,7 @@ output$overall_stage2<-renderPlot({
         file.copy(src, 'report.Rmd', overwrite = TRUE)
         
         library(rmarkdown)
-        out <- render('report.Rmd', html_document())
+        out <- render('report.Rmd', pdf_document())
         file.rename(out, file)
         
       }
