@@ -79,6 +79,7 @@ ui<-dashboardPage(
                
        fluidRow(width=12,
           uiOutput('project_name'),
+          tags$style(".small-box.bg-red {background-color: #C00000 !important;}"),
           valueBoxOutput('overall'),
           valueBoxOutput('overall_stage')
      ),
