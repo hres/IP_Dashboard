@@ -6,25 +6,25 @@
 #   directions <- c(1, -1)
 #   
 #   line_pos <- data.frame(
-#     "date"=unique(df$Approved_finish_date),
-#     "position"=rep(positions, length.out=length(unique(df$Approved_finish_date))),
-#     "direction"=rep(directions, length.out=length(unique(df$Approved_finish_date)))
+#     "date"=unique(df$Actual_date),
+#     "position"=rep(positions, length.out=length(unique(df$Actual_date))),
+#     "direction"=rep(directions, length.out=length(unique(df$Actual_date)))
 #   )
 #   
-#   df<-left_join(df,line_pos,by=c('Approved_finish_date'='date'))
+#   df<-left_join(df,line_pos,by=c('Actual_date'='date'))
 #   text_offset <- 0.1
 #   
-#   df$month_count <- ave(df$Approved_finish_date==df$Approved_finish_date, df$Approved_finish_date, FUN=cumsum)
+#   df$month_count <- ave(df$Actual_date==df$Actual_date, df$Actual_date, FUN=cumsum)
 #   df$text_position <- (df$month_count * text_offset * df$direction) + df$position
 #   
 #   month_buffer <- 4
 #   
-#   month_date_range <- seq(min(df$Approved_finish_date,na.rm=T) - months(month_buffer), max(df$Approved_finish_date,na.rm=T) + months(month_buffer), by='month')
+#   month_date_range <- seq(min(df$Actual_date,na.rm=T) - months(month_buffer), max(df$Actual_date,na.rm=T) + months(month_buffer), by='month')
 #   month_df <- data.frame(month_date_range)
 #   month_df$month_format <- paste0(year(month_df$month_date_range),' ',quarters(month_df$month_date_range))
 #   month_df$month_format<-ifelse(month_df$month_format==lead(month_df$month_format,default=''),'',month_df$month_format)
 #   
-#   timeline_plot<-ggplot(df,aes(x=Approved_finish_date,y=0,label=Major.Milestone))+
+#   timeline_plot<-ggplot(df,aes(x=Actual_date,y=0,label=Major.Milestone))+
 #     labs(col="Milestones")+
 #     theme_classic()
 #   #timeline_plot<-timeline_plot+scale_color_manual(values=status_colors, labels=status_levels, drop = FALSE)
@@ -34,7 +34,7 @@
 #                                           color = "black", size=0.3)
 #   
 #   # Plot vertical segment lines for milestones
-#   timeline_plot<-timeline_plot+geom_segment(data=df[df$month_count == 1,], aes(y=position,yend=0,xend=Approved_finish_date), color='black', size=0.2)
+#   timeline_plot<-timeline_plot+geom_segment(data=df[df$month_count == 1,], aes(y=position,yend=0,xend=Actual_date), color='black', size=0.2)
 #   
 #   # Plot scatter points at zero and date
 #   timeline_plot<-timeline_plot+geom_point(aes(y=0), size=3)
@@ -91,7 +91,7 @@ budget_plot2<-function(ds){
 
 timeplot<-function(df){
   
-  status_levels <- c("Green", "Yellow", "Red","Black")
+  status_levels <- c("within 3 months", "3-6 months", "6+ months","no change")
   status_colors <- c( "#00B050", "#FFC000", "#C00000","#000000")
   
   df$Schedule.Health <- factor(df$Schedule.Health, levels=status_levels, ordered=TRUE)
@@ -100,25 +100,25 @@ timeplot<-function(df){
   directions <- c(1, -1)
   
   line_pos <- data.frame(
-    "date"=sort(unique(df$Approved_finish_date),na.last=T),
-    "position"=rep(positions, length.out=length(unique(df$Approved_finish_date))),
-    "direction"=rep(directions, length.out=length(unique(df$Approved_finish_date)))
+    "date"=sort(unique(df$Actual_date),na.last=T),
+    "position"=rep(positions, length.out=length(unique(df$Actual_date))),
+    "direction"=rep(directions, length.out=length(unique(df$Actual_date)))
   )
   
-  df<-left_join(df,line_pos,by=c('Approved_finish_date'='date'))
+  df<-left_join(df,line_pos,by=c('Actual_date'='date'))
   text_offset <- 0.1
   
-  df$month_count <- ave(df$Approved_finish_date==df$Approved_finish_date, df$Approved_finish_date, FUN=cumsum)
+  df$month_count <- ave(df$Actual_date==df$Actual_date, df$Actual_date, FUN=cumsum)
   df$text_position <- (df$month_count * text_offset * df$direction) + df$position
   
   month_buffer <- 4
   
-  month_date_range <- seq(min(df$Approved_finish_date,na.rm=T) - months(month_buffer), max(df$Approved_finish_date,na.rm=T) + months(month_buffer), by='month')
+  month_date_range <- seq(min(df$Actual_date,na.rm=T) - months(month_buffer), max(df$Actual_date,na.rm=T) + months(month_buffer), by='month')
   month_df <- data.frame(month_date_range)
   month_df$month_format <- paste0(year(month_df$month_date_range),' ',quarters(month_df$month_date_range))
   month_df$month_format<-ifelse(month_df$month_format==lead(month_df$month_format,default=''),'',month_df$month_format)
   
-  timeline_plot<-ggplot(df,aes(x=Approved_finish_date,y=0,label=Major.Milestone,color=Schedule.Health))+
+  timeline_plot<-ggplot(df,aes(x=Actual_date,y=0,label=Major.Milestone,color=Schedule.Health))+
     labs(col="Milestones")+
     theme_classic()
   timeline_plot<-timeline_plot+scale_color_manual(values=status_colors, labels=status_levels, drop = FALSE)
@@ -127,7 +127,7 @@ timeplot<-function(df){
   timeline_plot<-timeline_plot+geom_hline(yintercept=0, color = "black", size=0.3)
   
   # Plot vertical segment lines for milestones
-  timeline_plot<-timeline_plot+geom_segment(data=df[df$month_count == 1,], aes(y=position,yend=0,xend=Approved_finish_date), color='black', size=0.2)
+  timeline_plot<-timeline_plot+geom_segment(data=df[df$month_count == 1,], aes(y=position,yend=0,xend=Actual_date), color='black', size=0.2)
   
   # Plot scatter points at zero and date
   timeline_plot<-timeline_plot+geom_point(aes(y=0), size=3)
@@ -140,8 +140,8 @@ timeplot<-function(df){
                                      axis.ticks.y=element_blank(),
                                      axis.text.x =element_blank(),
                                      axis.ticks.x =element_blank(),
-                                     axis.line.x =element_blank(),
-                                     legend.position='none')
+                                     axis.line.x =element_blank())
+                                     #legend.position='bottom')
   
   # Show text for each month
   timeline_plot<-timeline_plot+geom_text(data=month_df, aes(x=month_date_range,y=-0.1,label=month_format),size=3,vjust=0.5, color='black')

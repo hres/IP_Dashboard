@@ -9,6 +9,23 @@
 
 shinyServer(function(input, output,session) {
   
+  output$contact_us<-renderUI({
+    HTML(paste(
+      "If you have any questions regarding data source or data quality, please contact:",br(),
+      "Sarah-Emily Carle",br(),
+      "MAnagement, Program Support",br(),
+      "Business Informatics Division",br(),
+      "RMOD, HFPB",br(),
+      "sarah-emily.carle@canada.ca",br(),br(),
+      "If you have technical questions regarding the application, please contact:",br(),
+      "Nanqing (Nancy) Zhu",br(),
+      "Data Scientist",br(),
+      "Business Informatics Division",br(),
+      "RMOD, HFPB",br(),
+      "nanqing.zhu@canada.ca"
+    ))
+  })
+  
   output$ip_tbl<-renderTable(
     all_proj[,1:2]%>%mutate(IP=as.character(IP))
   )
@@ -79,9 +96,9 @@ shinyServer(function(input, output,session) {
       mutate(Status=ifelse(`Functionality Met? (Y/N)`=='YES','\u2713',''))
 
     DT::datatable(df[,c('Status','Requirement')],
-                  options=list(pageLength=5,
-                               scrollX=TRUE,
-                               autoWidth=T,
+                  options=list(scroller = TRUE,
+                               scrollX = TRUE,
+                               scrollY = "275px",
                                columnDefs=list(list(width='700px',targets=2))))
   })
 
@@ -179,10 +196,18 @@ shinyServer(function(input, output,session) {
   
   
   schedule_overview<-reactive({
-    schedule%>%filter(IP %in% ip_selected()$ips)%>%
-               group_by(Major.Milestone)%>%
-               filter(Approved_finish_date==Actual_date)%>%
-               ungroup()
+    schedule<-schedule%>%filter(IP %in% ip_selected()$ips)%>%
+               # group_by(Major.Milestone)%>%
+               # filter(Approved_finish_date==Actual_date)%>%
+               # ungroup()%>%
+               filter(grepl('Start Date|End Date|Go live',Major.Milestone,ignore.case=T))
+    
+    if(input$selectdir=='All'){
+      schedule<-schedule%>%
+        filter(grepl('Go live',Major.Milestone,ignore.case=T))
+    }
+    
+    return(schedule)
   })
   
   output$schedule_plt<-renderPlotly({
@@ -193,23 +218,29 @@ shinyServer(function(input, output,session) {
     ))
     
   
-   ggplotly(timeplot(df),height=450,tooltip=NULL)
+    ggplotly(timeplot(df),height=450,tooltip=NULL)%>%
+      layout(legend=list(orientation='h',
+                         y=-10,
+                         x=0.2))
   })
   
   output$schedule_plt2<-renderPlotly({
     df<-schedule_overview()
     
-    if(input$selectdir=='All'){
-      df<-df%>%
-        filter(grepl('Go live',Major.Milestone,ignore.case=T))
-    }
+    # if(input$selectdir=='All'){
+    #   df<-df%>%
+    #     filter(grepl('Go live',Major.Milestone,ignore.case=T))
+    # }
     
     shiny::validate((
       need(any(!is.na(df$Approved_finish_date)),'There is no information on project schedule')
     ))
     
     
-    ggplotly(timeplot(df),height=450,tooltip=NULL)
+    ggplotly(timeplot(df),height=450,tooltip=NULL)%>%
+            layout(legend=list(orientation='h',
+                               y=-10,
+                               x=0.2))
     
   })
   
@@ -218,7 +249,9 @@ shinyServer(function(input, output,session) {
   output$schedule_tb<-DT::renderDataTable({
     df<-schedule%>%filter(IP==ip_selected()$ip)%>%
         #filter(grepl('Start Date|End Date|Go live',Major.Milestone,ignore.case=T))%>%
-        select(Milestone=Major.Milestone,Date=Approved_finish_date)
+        select(Milestone=Major.Milestone,
+               `Baseline Finish Date`=Approved_finish_date,
+               `Actual/Forecasted Finish Date`=Actual_date)
     
     DT::datatable(df,options = list(dom = 'tip'), rownames = FALSE)
   })
@@ -226,8 +259,9 @@ shinyServer(function(input, output,session) {
   
   output$schedule_tb2<-DT::renderDataTable({
     df<-schedule_overview()%>%
-      filter(grepl('Start Date|End Date|Go live',Major.Milestone,ignore.case=T))%>%
-      select(Milestone=Major.Milestone,`Actual/Forecasted Finish Date`=Approved_finish_date)
+      select(Milestone=Major.Milestone,
+             `Baseline Finish Date`=Approved_finish_date,
+             `Actual/Forecasted Finish Date`=Actual_date)
     
     DT::datatable(df,options = list(dom = 'tip'), rownames = FALSE)
   })
@@ -239,6 +273,7 @@ shinyServer(function(input, output,session) {
     cols<-c('On Track'='#00B050','Caution'='#FFC000','Elevated Risk'='#C00000')
     
     df<-all_proj%>%
+      filter(`Overall Project Health`!='Blue')%>%
       filter(IP %in% ip_selected()$ips)%>%
       group_by(status)%>%
       summarise(IP=paste(paste0('IP',IP),collapse='\n'),count=n())
@@ -262,7 +297,7 @@ shinyServer(function(input, output,session) {
   
 output$overall_stage2<-renderPlot({
 
-    cols<-c('On Track'='#00B050','Caution'='#FFC000','Elevated Risk'='#C00000')
+    cols<-c('On Track'='#00B050','Caution'='#FFC000','Elevated Risk'='#C00000','Not Available'='#1f77b4')
     
     df<-all_proj%>%
       filter(IP %in% ip_selected()$ips)%>%
@@ -320,7 +355,6 @@ output$overall_stage2<-renderPlot({
     )
     
     
-    
     output$downloadreport<-downloadHandler(
       filename='report.pdf',
       
@@ -341,7 +375,85 @@ output$overall_stage2<-renderPlot({
      
         )
      
-  
+    output$proj_risk_tb<-DT::renderDataTable({
+      options<- list(pageLength=5,
+                     scrollX=TRUE,
+                     autoWidth=T,
+                     columnDefs=list(list(width='500px',targets=2),
+                                     list(width='50px',targets=3),
+                                     list(width='50px',targets=4)))
+      
+      df<-proj_risk%>%filter(IP == input$selectip)%>%
+                      select(3:7)
+          datatable(df,options=options)%>%
+          formatStyle('Probability',
+                      backgroundColor=styleEqual(c("Green","Yellow","Red"),
+                                                 c( "#00B050", "#FFC000", "#C00000"))
+                      )%>%
+          formatStyle('Impact',
+                        backgroundColor=styleEqual(c("Green","Yellow","Red"),
+                                                   c( "#00B050", "#FFC000", "#C00000"))) 
+      
+    })
+    
+    output$proj_issue_tb<-DT::renderDataTable({
+      
+      options<- list(pageLength=5,
+                             scrollX=TRUE,
+                             autoWidth=T,
+                             columnDefs=list(list(width='500px',targets=2),
+                                             list(width='40px',targets=3)))
+      
+      df<-proj_issue%>%filter(IP == input$selectip)%>%
+        select(3:7)
+      datatable(df,options=options)%>%
+        formatStyle('Impact',
+                    backgroundColor=styleEqual(c("Green","Yellow","Red"),
+                                               c( "#00B050", "#FFC000", "#C00000"))
+        )
+      
+    })
+    
+    output$projrisk<-renderPlot({
+     proj_risk%>%
+        filter(IP %in% ip_selected()$ips & !is.na(Risk))%>%
+        count(Risk,sort=TRUE)%>%
+        mutate(Risk=reorder(Risk,n))%>%
+        ggplot(aes(x=Risk,y=n))+geom_col(fill='#1f77b4')+
+        scale_y_continuous(breaks=c(0,2,4,6,8))+
+        labs(x='',y='')+
+        geom_text(aes(label=n,hjust=-1))+
+        coord_flip()+
+        theme_minimal()+
+        theme(axis.title.x=element_blank(),
+              axis.text.x =element_text(size=10),
+              axis.text.y =element_text(size=11),
+              axis.title.y =element_blank())   
+        
+       
+    })
+    
+    
+    
+    output$projissue<-renderPlot({
+    proj_issue%>%
+        filter(IP %in% ip_selected()$ips & !is.na(Issue))%>%
+        count(Issue,sort=TRUE)%>%
+        mutate(Issue=reorder(Issue,n))%>%
+        ggplot(aes(x=Issue,y=n))+geom_col(fill='#1f77b4')+
+        scale_y_continuous(breaks=c(0,2,4,6,8))+
+        labs(x='',y='')+
+        geom_text(aes(label=n,hjust=-1))+
+        coord_flip()+
+        theme_minimal()+
+        theme(axis.title.x=element_blank(),
+              axis.text.x =element_text(size=10),
+              axis.text.y =element_text(size=11),
+              axis.title.y =element_blank())   
+      
+    })
+    
+    
   # observeEvent(event_data("plotly_click", source = "select"),{
   #   df<-functions()
   #   event.data<-plotly::event_data("plotly_click", source = "select")

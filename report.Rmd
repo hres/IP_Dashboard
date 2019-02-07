@@ -1,12 +1,16 @@
 ---
 title: "HPFB Project Dashboard"
-output: 
-  html_document:
-    theme: flatly
+# header-includes:
+# - \usepackage{pdflscape}
+# - \newcommand{\blandscape}{\begin{landscape}}
+# - \newcommand{\elandscape}{\end{landscape}}
+output: pdf_document
+  
+always_allow_html: yes
 ---
 
 ```{r,echo=FALSE}
-knitr::opts_chunk$set(echo=FALSE)
+knitr::opts_chunk$set(echo=FALSE,warning=FALSE,message=FALSE)
 ```
 
 Created on `r format(Sys.Date(),"%B %d,%Y")`
@@ -27,6 +31,7 @@ This reports presents the project portofolio. Project health is evaluated by thr
  cols<-c('On Track'='#00B050','Caution'='#FFC000','Elevated Risk'='#C00000')
     
     df<-all_proj%>%
+      filter(`Overall Project Health`!='Blue')%>%
       filter(IP %in% ip_selected()$ips)%>%
       group_by(status)%>%
       summarise(IP=paste(paste0('IP:',IP),collapse='\n'),count=n())
@@ -50,7 +55,7 @@ This reports presents the project portofolio. Project health is evaluated by thr
 
 ### Stage & Project Health
 ```{r,fig.width=8}
- cols<-c('On Track'='#00B050','Caution'='#FFC000','Elevated Risk'='#C00000')
+cols<-c('On Track'='#00B050','Caution'='#FFC000','Elevated Risk'='#C00000','Not Available'='#1f77b4')
     
     df2<-all_proj%>%
       filter(IP %in% ip_selected()$ips)%>%
@@ -103,7 +108,7 @@ summary<-functionality%>%
  ds2<-budget_yr%>%filter(IP %in% ip_selected()$ips)%>%
                     group_by(var,Year)%>%
                     summarise(value=sum(value,na.rm=T))
-    budget_plot(ds2)
+    budget_plot(ds2)+theme(axis.text.x = element_text(angle = 45))
 ```
 
 ```{r}
@@ -113,11 +118,11 @@ summary<-functionality%>%
       mutate(value=dollar(value))%>%
       spread(var,value)
     
-    DT::datatable(ds3)
+knitr::kable(ds3)
 ```
 
 ##### Projections
-```{r,fig.height=6}
+```{r,fig.height=5}
 ds<-budget%>%filter(IP %in% ip_selected()$ips)%>%
                  summarise(`Approved Budget`=sum(`Approved Budget`,na.rm=T),
                 `Expenditure to Date`=sum(expenditure_to_date,na.rm=T),
@@ -149,10 +154,47 @@ df<-schedule_overview()%>%
       filter(grepl('Start Date|End Date|Go live',Major.Milestone,ignore.case=T))%>%
       select(Milestone=Major.Milestone,`Actual/Forecasted Finish Date`=Approved_finish_date)
     
-    DT::datatable(df,options = list(dom = 'tip'), rownames = FALSE)
+knitr::kable(df)
 ```
 
 
+### Project Risks
+```{r}
+proj_risk%>%
+        filter(IP %in% ip_selected()$ips & !is.na(Risk))%>%
+        count(Risk,sort=TRUE)%>%
+        mutate(Risk=reorder(Risk,n))%>%
+        ggplot(aes(x=Risk,y=n))+geom_col(fill='#1f77b4')+
+        scale_y_continuous(breaks=c(0,2,4,6,8))+
+        labs(x='',y='')+
+        geom_text(aes(label=n,hjust=-1))+
+        coord_flip()+
+        theme_minimal()+
+        theme(axis.title.x=element_blank(),
+              axis.text.x =element_text(size=10),
+              axis.text.y =element_text(size=11),
+              axis.title.y =element_blank())   
+```
+
+### Project Issues
+```{r}
+ proj_issue%>%
+        filter(IP %in% ip_selected()$ips & !is.na(Issue))%>%
+        count(Issue,sort=TRUE)%>%
+        mutate(Issue=reorder(Issue,n))%>%
+        ggplot(aes(x=Issue,y=n))+geom_col(fill='#1f77b4')+
+        scale_y_continuous(breaks=c(0,2,4,6,8))+
+        labs(x='',y='')+
+        geom_text(aes(label=n,hjust=-1))+
+        coord_flip()+
+        theme_minimal()+
+        theme(axis.title.x=element_blank(),
+              axis.text.x =element_text(size=10),
+              axis.text.y =element_text(size=11),
+              axis.title.y =element_blank())  
+```
+
+<!-- \newpage -->
 #Individual Portofolio:
 ```{r}
 project_health<-all_proj%>%filter(IP == ip_selected()$ip)%>%pull(status)
@@ -168,7 +210,7 @@ project_stage<-all_proj%>%filter(IP ==input$selectip)%>%pull(stage)
 ##### Breakdown by Year
 ```{r,fig.width=10}
 ds5<-budget_yr%>%filter(IP==input$selectip)
-budget_plot(ds5)
+budget_plot(ds5)+theme(axis.text.x = element_text(angle = 45))
 ```
 
 ```{r}
@@ -176,11 +218,11 @@ ds6<-budget_yr%>%filter(IP==input$selectip)%>%
                     mutate(value=dollar(value))%>%
                     spread(var,value)
     
-DT::datatable(ds6)
+knitr::kable(ds6)
 ```
 
 ##### Projection
-```{r,fig.height=6}
+```{r,fig.height=5}
 ds4<-budget%>%filter(IP==input$selectip)%>%
                  summarise(`Approved Budget`=sum(`Approved Budget`,na.rm=T),
                            `Expenditure to Date`=sum(expenditure_to_date,na.rm=T),
@@ -198,3 +240,33 @@ timeplot(df5)
     
 ```
 
+```{r}
+df<-schedule%>%filter(IP==ip_selected()$ip)%>%
+        #filter(grepl('Start Date|End Date|Go live',Major.Milestone,ignore.case=T))%>%
+        select(Milestone=Major.Milestone,Date=Approved_finish_date)
+    
+knitr::kable(df)
+```
+
+<!-- \newpage -->
+<!-- \blandscape -->
+
+### Project Risks
+
+```{r}
+proj_risk%>%filter(IP == input$selectip)%>%
+                      select(3:7)%>%
+                      knitr::kable()
+```
+
+
+### Project Issues
+```{r}
+proj_issue%>%filter(IP == input$selectip)%>%
+        select(3:7)%>%
+        knitr::kable()
+      
+```
+
+
+<!-- \elandscape -->

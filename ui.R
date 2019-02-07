@@ -1,6 +1,6 @@
 
 ui<-dashboardPage(
-  dashboardHeader(title='HPFB IP Dashboard',
+  dashboardHeader(title=paste0('HPFB IP Dashboard \n as of ',dat),
                   titleWidth=400),
   
   dashboardSidebar(width=150,
@@ -19,17 +19,25 @@ ui<-dashboardPage(
                      ),
                      
                      br(),br(),
-                     tags$b(' Download:'),
+                     tags$b('Download:',style="margin-left:10px;"),
                      br(),
                      br(),
+                     tags$style(type="text/css", "#downloadData {color: black;margin-left:10px;}"),
                      downloadButton('downloadData','Data'),
                      br(),
                      br(),
-                     downloadButton('downloadreport','Report')             
+                     tags$style(type="text/css", "#downloadreport {color: black;margin-left:10px;}"),
+                     downloadButton('downloadreport','Report'),
+                     br(),
+                     br(),
+                     br(),
+                     br(),
+                     br(),
+                     actionButton('contact','Contact us',icon=icon('phone'))
+                    
+                     )
                      
-                   )
                    
-                     
   ),
   dashboardBody(
     
@@ -39,8 +47,8 @@ ui<-dashboardPage(
                fluidRow(
                        div(style='display: inline-block;vertical-align:center;width:100px;', uiOutput('project_name2')),
                        div(style="display: inline-block;vertical-align:center; width: 300px;",HTML("<br>")),
-                       
-                       bsModal('modal','IP Name','info',tableOutput('ip_tbl'))
+                       bsModal('modal','IP Name','info',tableOutput('ip_tbl')),
+                       bsModal('modal2','Contact us','contact',htmlOutput('contact_us'))
                ),
               fluidRow(
                box(title='Overall Project Health',plotOutput('overall2')),
@@ -71,8 +79,18 @@ ui<-dashboardPage(
                            plotlyOutput('schedule_plt2'),
                            br(),
                            br(),
+                           br(),
+                           br(),
                            DT::dataTableOutput('schedule_tb2'))
-              )),
+              ),
+              
+              fluidRow(
+                box(title='Project Risks',
+                    plotOutput('projrisk')),
+                box(title='Project Issues',
+                    plotOutput('projissue'))
+              )
+              ),
       
     
       tabItem(tabName='individual',
@@ -86,14 +104,14 @@ ui<-dashboardPage(
      
      fluidRow(
   
-      box(title='Project Functionality',
+      box(title='Project Functionality',height='500px',
           tabsetPanel(id='tabs',
                       
               tabPanel(title='Table',
                        DT::dataTableOutput("function_tb"))
           )),
       
-      box(title='Project Budget',
+      box(title='Project Budget',height='500px',
           tabsetPanel(
             tabPanel(title='Breakdown by Year',
                      plotlyOutput('budget_plt')),
@@ -111,7 +129,21 @@ ui<-dashboardPage(
             br(),
             br(),
             DT::dataTableOutput('schedule_tb')))
-     )
+     ),
+    
+    
+    fluidRow(
+      column(12,
+             box(title='Project Risks',width=NULL,
+                 DT::dataTableOutput('proj_risk_tb')))
+    ),
+    
+    fluidRow(
+      column(12,
+             box(title='Project Issues',width=NULL,
+                 DT::dataTableOutput('proj_issue_tb')))
+    )
+    
      
       )
     )
