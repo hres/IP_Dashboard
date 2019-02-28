@@ -30,7 +30,7 @@ ip<-c(budget$IP[!is.na(budget$IP)])
 directorate<-c('All',all_proj$`Directorate Lead`)
 
 all_proj$`Overall Project Health`[is.na(all_proj$`Overall Project Health`)]<-'Blue'
-all_proj$status[is.na(all_proj$status)]<-'Not Available'
+all_proj$status[is.na(all_proj$status)]<-'Not yet started'
 
 
 #date of which data is updated:

@@ -1,6 +1,6 @@
 
 ui<-dashboardPage(
-  dashboardHeader(title=paste0('HPFB IP Dashboard \n as of ',dat),
+  dashboardHeader(title=textOutput('header'),
                   titleWidth=400),
   
   dashboardSidebar(width=150,
@@ -33,11 +33,7 @@ ui<-dashboardPage(
                      br(),
                      br(),
                      br(),
-                     actionButton('contact','Contact us',icon=icon('phone'))
-                    
-                     )
-                     
-                   
+                     actionButton('contact','Contact us',icon=icon('phone')))
   ),
   dashboardBody(
     
@@ -47,8 +43,8 @@ ui<-dashboardPage(
                fluidRow(
                        div(style='display: inline-block;vertical-align:center;width:100px;', uiOutput('project_name2')),
                        div(style="display: inline-block;vertical-align:center; width: 300px;",HTML("<br>")),
-                       bsModal('modal','IP Name','info',tableOutput('ip_tbl')),
-                       bsModal('modal2','Contact us','contact',htmlOutput('contact_us'))
+                       bsModal('modal','IP Name','info',tableOutput('ip_tbl'))
+                       
                ),
               fluidRow(
                box(title='Overall Project Health',plotOutput('overall2')),
@@ -100,6 +96,7 @@ ui<-dashboardPage(
           tags$style(".small-box.bg-red {background-color: #C00000 !important;}"),
           valueBoxOutput('overall'),
           valueBoxOutput('overall_stage')
+          
      ),
      
      fluidRow(

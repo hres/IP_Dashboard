@@ -9,22 +9,28 @@
 
 shinyServer(function(input, output,session) {
   
-  output$contact_us<-renderUI({
-    HTML(paste(
-      "If you have any questions regarding data source or data quality, please contact:",br(),
-      "Sarah-Emily Carle",br(),
-      "MAnagement, Program Support",br(),
-      "Business Informatics Division",br(),
-      "RMOD, HFPB",br(),
-      "sarah-emily.carle@canada.ca",br(),br(),
-      "If you have technical questions regarding the application, please contact:",br(),
-      "Nanqing (Nancy) Zhu",br(),
-      "Data Scientist",br(),
-      "Business Informatics Division",br(),
-      "RMOD, HFPB",br(),
-      "nanqing.zhu@canada.ca"
+  observeEvent(input$contact,{
+    
+    showModal(modalDialog(
+      title='Contact Us',
+      HTML(paste(
+        "If you have any questions regarding data source or data quality, please contact:",br(),
+        "Sarah-Emily Carle",br(),
+        "MAnagement, Program Support",br(),
+        "Business Informatics Division",br(),
+        "RMOD, HFPB",br(),
+        "sarah-emily.carle@canada.ca",br(),br(),
+        "If you have technical questions regarding the application, please contact:",br(),
+        "Nanqing (Nancy) Zhu",br(),
+        "Data Scientist",br(),
+        "Business Informatics Division",br(),
+        "RMOD, HFPB",br(),
+        "nanqing.zhu@canada.ca"
+      )),
+      easyClose=T
     ))
   })
+  
   
   output$ip_tbl<-renderTable(
     all_proj[,1:2]%>%mutate(IP=as.character(IP))
@@ -297,12 +303,14 @@ shinyServer(function(input, output,session) {
   
 output$overall_stage2<-renderPlot({
 
-    cols<-c('On Track'='#00B050','Caution'='#FFC000','Elevated Risk'='#C00000','Not Available'='#1f77b4')
+    cols<-c('On Track'='#00B050','Caution'='#FFC000','Elevated Risk'='#C00000','Not yet started'='#1f77b4')
     
     df<-all_proj%>%
       filter(IP %in% ip_selected()$ips)%>%
       group_by(stage,status)%>%
       summarise(IP=paste(paste0('IP',IP),collapse='\n'),count=n())
+    
+    df$status<-factor(df$status,levels=c('On Track','Caution','Elevated Risk','Not yet started'))
     
     p<-ggplot(df,aes(x=stage,y=count,fill=status))+geom_col(position='dodge')+
       scale_fill_manual(values=cols)+
@@ -415,6 +423,13 @@ output$overall_stage2<-renderPlot({
     })
     
     output$projrisk<-renderPlot({
+    
+      shiny::validate({
+        need(nrow(proj_risk%>%
+                    filter(IP %in% ip_selected()$ips & !is.na(Risk)))>0,'Data Not Available')
+      })
+      
+      
      proj_risk%>%
         filter(IP %in% ip_selected()$ips & !is.na(Risk))%>%
         count(Risk,sort=TRUE)%>%
@@ -436,6 +451,13 @@ output$overall_stage2<-renderPlot({
     
     
     output$projissue<-renderPlot({
+      
+      
+      shiny::validate({
+        need(nrow(proj_issue%>%
+                    filter(IP %in% ip_selected()$ips & !is.na(Issue)))>0,'Data Not Available')
+      })
+    
     proj_issue%>%
         filter(IP %in% ip_selected()$ips & !is.na(Issue))%>%
         count(Issue,sort=TRUE)%>%
