@@ -274,30 +274,33 @@ shinyServer(function(input, output,session) {
   
   
   
-  output$overall2<-renderPlot({
+  output$overall2<-renderPlotly({
     
     cols<-c('On Track'='#00B050','Caution'='#FFC000','Elevated Risk'='#C00000')
     
     df<-all_proj%>%
       filter(`Overall Project Health`!='Blue')%>%
       filter(IP %in% ip_selected()$ips)%>%
-      group_by(status)%>%
-      summarise(IP=paste(paste0('IP',IP),collapse='\n'),count=n())
+      left_join(budget[,c('IP','Approved Budget')])
     
-    p<-ggplot(df,aes(x=status,y=count,fill=status))+geom_col()+
-      scale_fill_manual(values=cols)+
-      scale_y_continuous(breaks=c(0,1,2,3,4))+
-      geom_text(aes(y=count,label=IP),vjust=1.5)+
-      geom_text(aes(label=as.character(count)),vjust=-0.5)+
-      guides(fill=F)+
+    df$status<-factor(df$status,levels=c('On Track','Caution','Elevated Risk'))
+    
+    
+    p<-df%>%
+      ggplot(aes(x=status,y=`Approved Budget`,size=`Approved Budget`,color=status,text=dollar(`Approved Budget`)))+
+      scale_color_manual(values=cols)+
+      geom_point()+
+      geom_text(aes(label=paste0('IP',IP)),size=2.5,nudge_x=0.25,check_overlap = TRUE)+
+      scale_size_continuous(range=c(1,10))+
+      scale_y_continuous(limits=c(0,17000000),labels = dollar_y)+
       theme_minimal()+
       theme(axis.title.x=element_blank(),
-            axis.text.x =element_text(size=12),
-            axis.title.y =element_blank(),
-            legend.title=element_blank()
-      )
+            axis.text.x =element_text(size=10),
+            legend.position ="none")
     
-    p
+    
+    ggplotly(p,tooltip='text')
+    
     
   })
   

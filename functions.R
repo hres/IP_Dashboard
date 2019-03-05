@@ -62,7 +62,7 @@
 budget_plot<-function(ds){
   p<-ggplot(ds,aes(x=Year,y=value,fill=var,text=paste0('Amount: $',prettyNum(value,big.mark=','))))+
     geom_bar(stat='identity',position='dodge')+
-    scale_y_continuous(labels=dollar)+
+    scale_y_continuous(labels=dollar_y)+
     scale_fill_discrete(name = "")+
     labs(x='',y='')+
     theme_minimal()
@@ -71,12 +71,17 @@ budget_plot<-function(ds){
   #ggplotly(p,tooltip = "text")%>%layout(margin=list(b=50),xaxis=list(tickangle=-45))
 }
 
+dollar_y<-function(x){
+  x<-paste0('$',round(x/10^6,1),'M')
+  x
+}
+
 budget_plot2<-function(ds){
   
   ds$col<-ifelse(ds$value>=0,'#1f77b4','#980008')
   p<-ggplot(ds,aes(x=cat,y=value,fill=col))+geom_bar(stat='identity')+
     scale_fill_manual(values=c('#1f77b4','#980008'))+
-    scale_y_continuous(labels=dollar)+
+    scale_y_continuous(labels=dollar_y)+
     labs(x='',y='')+
     geom_text(aes(label=dollar(value),vjust=ifelse(value>0,-1,1.5)))+
     guides(fill=FALSE)+

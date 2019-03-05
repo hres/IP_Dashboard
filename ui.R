@@ -46,8 +46,19 @@ ui<-dashboardPage(
                        bsModal('modal','IP Name','info',tableOutput('ip_tbl'))
                        
                ),
+              
               fluidRow(
-               box(title='Overall Project Health',plotOutput('overall2')),
+                box(title='Schedule',width=12,
+                    plotlyOutput('schedule_plt2'),
+                    br(),
+                    br(),
+                    br(),
+                    br(),
+                    DT::dataTableOutput('schedule_tb2'))
+              ),
+              
+              fluidRow(
+               box(title='Overall Project Health',plotlyOutput('overall2')),
                box(title='Project Health and Current Stage',plotOutput('overall_stage2'))
                ),
               
@@ -67,25 +78,14 @@ ui<-dashboardPage(
                                     plotOutput('budget_all2'))
                           )
                         )
-              ),
-              
-              
-              fluidRow(
-                  box(title='Schedule',width=12,
-                           plotlyOutput('schedule_plt2'),
-                           br(),
-                           br(),
-                           br(),
-                           br(),
-                           DT::dataTableOutput('schedule_tb2'))
-              ),
-              
-              fluidRow(
-                box(title='Project Risks',
-                    plotOutput('projrisk')),
-                box(title='Project Issues',
-                    plotOutput('projissue'))
               )
+              
+              # fluidRow(
+              #   box(title='Project Risks',
+              #       plotOutput('projrisk')),
+              #   box(title='Project Issues',
+              #       plotOutput('projissue'))
+              # )
               ),
       
     
@@ -97,6 +97,15 @@ ui<-dashboardPage(
           valueBoxOutput('overall'),
           valueBoxOutput('overall_stage')
           
+     ),
+     
+     fluidRow(
+       column(12,
+              box(title='Schedule',width=NULL,
+                  plotlyOutput('schedule_plt'),
+                  br(),
+                  br(),
+                  DT::dataTableOutput('schedule_tb')))
      ),
      
      fluidRow(
@@ -118,17 +127,8 @@ ui<-dashboardPage(
                      plotOutput('budget_all')))
             
        )),
-     
-    fluidRow(
-      column(12,
-      box(title='Schedule',width=NULL,
-            plotlyOutput('schedule_plt'),
-            br(),
-            br(),
-            DT::dataTableOutput('schedule_tb')))
-     ),
     
-    
+  
     fluidRow(
       column(12,
              box(title='Project Risks',width=NULL,
