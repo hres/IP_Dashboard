@@ -187,12 +187,13 @@ knitr::kable(df,format='latex',
 ```{r}
 project_health<-all_proj%>%filter(IP == ip_selected()$ip)%>%pull(status)
 project_stage<-all_proj%>%filter(IP ==input$selectip)%>%pull(stage)
+project_stage<-gsub('\n',' ',project_stage)
 ```
 
 
-## Project: `r ip_selected()$ip`
-### Project Health : `r project_health `
-### Stage : `r project_stage`
+## `r paste0('IP',ip_selected()$ip)`
+### `r paste0('Project Health : ',project_health) `
+### `r paste0('Stage : ',project_stage)`
 
 ### Budget
 ##### Breakdown by Year
@@ -210,6 +211,7 @@ ds6<-budget_yr%>%filter(IP==input$selectip)%>%
 knitr::kable(ds6)
 ```
 
+\newpage
 ##### Projections
 ```{r,fig.width=10}
 ds4<-budget%>%filter(IP==input$selectip)%>%
