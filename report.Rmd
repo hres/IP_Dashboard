@@ -1,16 +1,34 @@
 ---
 title: "HPFB Project Dashboard"
-# header-includes:
-# - \usepackage{pdflscape}
-# - \newcommand{\blandscape}{\begin{landscape}}
-# - \newcommand{\elandscape}{\end{landscape}}
-output: pdf_document
-  
+output: 
+  pdf_document:
+    latex_engine: xelatex
+    sansfont: Calibri
 always_allow_html: yes
+header-includes:
+  - \usepackage{booktabs}
+  - \usepackage{longtable}
+  - \usepackage{float}
+  - \usepackage{pdflscape}
+  - \newcommand{\blandscape}{\begin{landscape}}
+  - \newcommand{\elandscape}{\end{landscape}}
+  - \usepackage{array}
+  - \usepackage{multirow}
+  - \usepackage{wrapfig}
+  - \usepackage{colortbl}
+  - \usepackage{tabu}
+  - \usepackage{threeparttable}
+  - \usepackage{threeparttablex}
+  - \usepackage[normalem]{ulem}
+  - \usepackage{makecell}
+  - \usepackage{xcolor}
 ---
 
 ```{r,echo=FALSE}
+library(knitr)
+library(kableExtra)
 knitr::opts_chunk$set(echo=FALSE,warning=FALSE,message=FALSE)
+options(knitr.table.format='latex')
 ```
 
 Created on `r format(Sys.Date(),"%B %d,%Y")`
@@ -30,39 +48,40 @@ This reports presents the project portofolio. Project health is evaluated by thr
 ```{r,message=FALSE,warning=FALSE}
  cols<-c('On Track'='#00B050','Caution'='#FFC000','Elevated Risk'='#C00000')
     
-    df<-all_proj%>%
+   df<-all_proj%>%
       filter(`Overall Project Health`!='Blue')%>%
       filter(IP %in% ip_selected()$ips)%>%
-      group_by(status)%>%
-      summarise(IP=paste(paste0('IP:',IP),collapse='\n'),count=n())
+      left_join(budget[,c('IP','Approved Budget')])
     
-    p1<-ggplot(df,aes(x=status,y=count,fill=status))+geom_col()+
-      scale_fill_manual(values=cols)+
-      scale_y_continuous(breaks=c(0,1,2,3,4))+
-      geom_text(aes(y=count,label=IP),position=position_dodge(width=0.9),vjust=1.5)+
-      geom_text(aes(label=as.character(count)),position=position_dodge(width=0.9),vjust=-0.5)+
-      guides(fill=F)+
+    df$status<-factor(df$status,levels=c('On Track','Caution','Elevated Risk'))
+    
+    p<-df%>%
+      ggplot(aes(x=status,y=`Approved Budget`,size=`Approved Budget`,color=status,text=dollar(`Approved Budget`)))+
+      scale_color_manual(values=cols)+
+      geom_point()+
+      geom_text(aes(label=paste0('IP',IP)),size=2.5,nudge_x=0.25,check_overlap = TRUE)+
+      scale_size_continuous(range=c(3,30))+
+      scale_y_continuous(limits=c(0,17000000),labels = dollar_y)+
       theme_minimal()+
       theme(axis.title.x=element_blank(),
-            axis.text.x =element_text(size=12),
-            axis.title.y =element_blank(),
-            legend.title=element_blank()
-      )
-    
-    p1
+            axis.text.x =element_text(size=10),
+            legend.position ="none")
+    p
     
 ```
 
 ### Stage & Project Health
-```{r,fig.width=8}
-cols<-c('On Track'='#00B050','Caution'='#FFC000','Elevated Risk'='#C00000','Not Available'='#1f77b4')
+```{r,fig.width=10}
+cols<-c('On Track'='#00B050','Caution'='#FFC000','Elevated Risk'='#C00000','Not yet started'='#1f77b4')
     
-    df2<-all_proj%>%
+    df<-all_proj%>%
       filter(IP %in% ip_selected()$ips)%>%
       group_by(stage,status)%>%
-      summarise(IP=paste(paste0('IP:',IP),collapse='\n'),count=n())
+      summarise(IP=paste(paste0('IP',IP),collapse='\n'),count=n())
     
-    p2<-ggplot(df2,aes(x=stage,y=count,fill=status))+geom_col(position='dodge')+
+    df$status<-factor(df$status,levels=c('On Track','Caution','Elevated Risk','Not yet started'))
+    
+    p<-ggplot(df,aes(x=stage,y=count,fill=status))+geom_col(position='dodge')+
       scale_fill_manual(values=cols)+
       scale_y_continuous(breaks=c(0,1,2,3,4))+
       geom_text(aes(y=count-0.5,label=IP),position=position_dodge(width=0.9))+
@@ -74,7 +93,8 @@ cols<-c('On Track'='#00B050','Caution'='#FFC000','Elevated Risk'='#C00000','Not 
             legend.title=element_blank()
       )
     
-    p2
+    p
+    
 ```
 
 ### Project functionality
@@ -122,7 +142,7 @@ knitr::kable(ds3)
 ```
 
 ##### Projections
-```{r,fig.height=5}
+```{r,fig.width=10}
 ds<-budget%>%filter(IP %in% ip_selected()$ips)%>%
                  summarise(`Approved Budget`=sum(`Approved Budget`,na.rm=T),
                 `Expenditure to Date`=sum(expenditure_to_date,na.rm=T),
@@ -131,7 +151,8 @@ ds<-budget%>%filter(IP %in% ip_selected()$ips)%>%
     
     budget_plot2(ds)
 ```
-
+\newpage
+\blandscape
 
 ### Schedule
 ```{r,message=FALSE,warning=FALSE,fig.width=12}
@@ -154,60 +175,28 @@ df<-schedule_overview()%>%
       filter(grepl('Start Date|End Date|Go live',Major.Milestone,ignore.case=T))%>%
       select(Milestone=Major.Milestone,`Actual/Forecasted Finish Date`=Approved_finish_date)
     
-knitr::kable(df)
+knitr::kable(df,format='latex',
+                booktabs= TRUE,
+                longtable=FALSE)
 ```
+\elandscape
 
+\newpage
 
-### Project Risks
-```{r}
-proj_risk%>%
-        filter(IP %in% ip_selected()$ips & !is.na(Risk))%>%
-        count(Risk,sort=TRUE)%>%
-        mutate(Risk=reorder(Risk,n))%>%
-        ggplot(aes(x=Risk,y=n))+geom_col(fill='#1f77b4')+
-        scale_y_continuous(breaks=c(0,2,4,6,8))+
-        labs(x='',y='')+
-        geom_text(aes(label=n,hjust=-1))+
-        coord_flip()+
-        theme_minimal()+
-        theme(axis.title.x=element_blank(),
-              axis.text.x =element_text(size=10),
-              axis.text.y =element_text(size=11),
-              axis.title.y =element_blank())   
-```
-
-### Project Issues
-```{r}
- proj_issue%>%
-        filter(IP %in% ip_selected()$ips & !is.na(Issue))%>%
-        count(Issue,sort=TRUE)%>%
-        mutate(Issue=reorder(Issue,n))%>%
-        ggplot(aes(x=Issue,y=n))+geom_col(fill='#1f77b4')+
-        scale_y_continuous(breaks=c(0,2,4,6,8))+
-        labs(x='',y='')+
-        geom_text(aes(label=n,hjust=-1))+
-        coord_flip()+
-        theme_minimal()+
-        theme(axis.title.x=element_blank(),
-              axis.text.x =element_text(size=10),
-              axis.text.y =element_text(size=11),
-              axis.title.y =element_blank())  
-```
-
-<!-- \newpage -->
 #Individual Portofolio:
 ```{r}
 project_health<-all_proj%>%filter(IP == ip_selected()$ip)%>%pull(status)
 project_stage<-all_proj%>%filter(IP ==input$selectip)%>%pull(stage)
 ```
 
-## Project: `r ip_selected()$ip`
 
+## Project: `r ip_selected()$ip`
 ### Project Health : `r project_health `
 ### Stage : `r project_stage`
 
 ### Budget
 ##### Breakdown by Year
+
 ```{r,fig.width=10}
 ds5<-budget_yr%>%filter(IP==input$selectip)
 budget_plot(ds5)+theme(axis.text.x = element_text(angle = 45))
@@ -221,8 +210,8 @@ ds6<-budget_yr%>%filter(IP==input$selectip)%>%
 knitr::kable(ds6)
 ```
 
-##### Projection
-```{r,fig.height=5}
+##### Projections
+```{r,fig.width=10}
 ds4<-budget%>%filter(IP==input$selectip)%>%
                  summarise(`Approved Budget`=sum(`Approved Budget`,na.rm=T),
                            `Expenditure to Date`=sum(expenditure_to_date,na.rm=T),
@@ -231,6 +220,9 @@ ds4<-budget%>%filter(IP==input$selectip)%>%
     
     budget_plot2(ds4)
 ```
+
+\newpage
+\blandscape
 
 ### Schedule
 ```{r,message=FALSE,warning=FALSE,fig.width=12}
@@ -248,15 +240,16 @@ df<-schedule%>%filter(IP==ip_selected()$ip)%>%
 knitr::kable(df)
 ```
 
-<!-- \newpage -->
-<!-- \blandscape -->
 
 ### Project Risks
 
 ```{r}
 proj_risk%>%filter(IP == input$selectip)%>%
                       select(3:7)%>%
-                      knitr::kable()
+                      kable('latex',booktabs=T)%>%
+                      kable_styling(full_width=F)%>%
+                      column_spec(2,width='10em')%>%
+                      column_spec(5,width='20em')
 ```
 
 
@@ -264,9 +257,11 @@ proj_risk%>%filter(IP == input$selectip)%>%
 ```{r}
 proj_issue%>%filter(IP == input$selectip)%>%
         select(3:7)%>%
-        knitr::kable()
+        kable('latex',booktabs=T)%>%
+        kable_styling(full_width=F)%>%
+        column_spec(2,width='10em')%>%
+        column_spec(5,width='20em')
       
 ```
 
-
-<!-- \elandscape -->
+\elandscape
