@@ -1,5 +1,6 @@
 library(shiny)
 library(shinyBS)
+library(shinyWidgets)
 library(shinydashboard)
 library(dplyr)
 library(lubridate)

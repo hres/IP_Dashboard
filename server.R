@@ -9,6 +9,34 @@
 
 shinyServer(function(input, output,session) {
   
+  plot_height<-reactive({
+    
+    n<-all_proj%>%filter(IP %in% ip_selected()$ips)%>%distinct(`Internal or External`)
+    
+    if(input$internal=='Yes' & nrow(n)==2){
+      height<-600
+    }else{
+      height<-400
+    }
+    
+    height
+  })
+  
+  
+  plot_height2<-reactive({
+    
+    n<-all_proj%>%filter(IP %in% ip_selected()$ips)%>%distinct(`Internal or External`)
+    
+    if(input$internal=='Yes' & nrow(n)==2){
+      height<-850
+    }else{
+      height<-450
+    }
+    
+    height
+  })
+  
+  
   observeEvent(input$contact,{
     
     showModal(modalDialog(
@@ -70,29 +98,32 @@ shinyServer(function(input, output,session) {
   })
   
   
-  output$function_plt<-renderPlotly({
+  output$function_plt<-renderPlot({
     
+    if(input$internal=='No'){
     summary<-functionality%>%
       filter(IP %in% ip_selected()$ips)%>%
-      dplyr::count(`Functionality Met? (Y/N)`)
+      dplyr::count(`Functionality Met? (Y/N)`)%>%
+      rename(status=`Functionality Met? (Y/N)`)%>%
+      mutate(color=ifelse(status=='YES',"#00b050","#C00000"))
     
-    colnames(summary)<-c('status','count')
+    function_plot(summary)
     
-    status_color<-data.frame(status=c("YES", "NO"),
-                             color=c( "#00b050","#C00000"))
-    
-    summary<-left_join(summary,status_color)
-    
-    plot_ly(summary,x=~status,y=~count,type='bar',
-            marker=list(color=as.character(summary$color)))%>%
-      layout(showlegend = F,
-             xaxis=list(title=''),
-             yaxis=list(title=''))%>%
-      add_annotations(x=summary$`Functionality Met? (Y/N)`,
-                      y=summary$count+3,
-                      text=summary$count,
-                      showarrow=F)
+   
+    }else{
       
+      summary<-functionality%>%
+        filter(IP %in% ip_selected()$ips)%>%
+        left_join(all_proj[,c('Project Name','Internal or External')])%>%
+        count(`Functionality Met? (Y/N)`,`Internal or External`)%>%
+        rename(status=`Functionality Met? (Y/N)`)%>%
+        mutate(color=ifelse(status=='YES',"#00b050","#C00000"))
+      
+      function_plot(summary)+
+        facet_grid(`Internal or External`~.)+
+        theme(panel.spacing.y = unit(2,"lines"))
+      
+    }
   })
   
   output$function_tb<-DT::renderDataTable({
@@ -155,6 +186,8 @@ shinyServer(function(input, output,session) {
   })
   
   output$budget_all2<-renderPlot({
+    
+    if(input$internal=='No'){
     ds<-budget%>%filter(IP %in% ip_selected()$ips)%>%
                  summarise(`Approved Budget`=sum(`Approved Budget`,na.rm=T),
                 `Expenditure to Date`=sum(expenditure_to_date,na.rm=T),
@@ -162,6 +195,22 @@ shinyServer(function(input, output,session) {
                  gather(cat)
     
     budget_plot2(ds)
+    
+    }else{
+      
+      ds<-budget%>%
+        filter(IP %in% ip_selected()$ips)%>%
+        left_join(all_proj%>%select(IP=IP,internal_external=`Internal or External`))%>%
+        group_by(internal_external)%>%
+        summarise(`Approved Budget`=sum(`Approved Budget`,na.rm=T),
+                  `Expenditure to Date`=sum(expenditure_to_date,na.rm=T),
+                  `Remaining Budget Projected`=sum(`Variance between remaining approved budget projected spending`,na.rm=T))%>%
+        gather(cat,value,-internal_external)
+      
+      budget_plot2(ds)+facet_grid(`internal_external`~.)
+      
+      
+    }
   })
   
   
@@ -173,15 +222,33 @@ shinyServer(function(input, output,session) {
   
   output$budget_plt2<-renderPlotly({
     
+    if(input$internal=='No'){
+    
     ds<-budget_yr%>%filter(IP %in% ip_selected()$ips)%>%
                     group_by(var,Year)%>%
                     summarise(value=sum(value,na.rm=T))
-    p<-budget_plot(ds)
-    ggplotly(p,tooltip = "text")%>%layout(margin=list(b=50),xaxis=list(tickangle=-45))
+   
+     p<-budget_plot(ds)
+    ggplotly(p,tooltip = "text",height=400)%>%layout(margin=list(b=50),xaxis=list(tickangle=-45))
+    
+    }else{
+      
+      ds<-budget_yr%>%
+        filter(IP %in% ip_selected()$ips)%>%
+        left_join(all_proj%>%select(IP=IP,internal_external=`Internal or External`))%>%
+        group_by(var,Year,internal_external)%>%
+        summarise(value=sum(value,na.rm=T))
+      
+      
+      p<-budget_plot(ds)+facet_grid(`internal_external`~.)
+      ggplotly(p,tooltip = "text")%>%layout(margin=list(b=50),xaxis=list(tickangle=-45))
+      
+    }
   })
   
   
   output$budget_tbl<-DT::renderDataTable({
+  
     ds<-budget_yr%>%filter(IP==input$selectip)%>%
                     mutate(value=dollar(value))%>%
                     spread(var,value)
@@ -191,22 +258,31 @@ shinyServer(function(input, output,session) {
   
   
   output$budget_tbl2<-DT::renderDataTable({
+    
+    if(input$internal=='No'){
     ds<-budget_yr%>%filter(IP %in% ip_selected()$ips)%>%
       group_by(var,Year)%>%
       summarise(value=sum(value,na.rm=T))%>%
       mutate(value=dollar(value))%>%
       spread(var,value)
-    
+    }else{
+      
+      ds<-budget_yr%>%
+        filter(IP %in% ip_selected()$ips)%>%
+        left_join(all_proj%>%select(IP=IP,internal_external=`Internal or External`))%>%
+        group_by(var,Year,internal_external)%>%
+        summarise(value=sum(value,na.rm=T))%>%
+        mutate(value=dollar(value))%>%
+        spread(var,value)
+    }
     DT::datatable(ds)
   })
   
   
   schedule_overview<-reactive({
     schedule<-schedule%>%filter(IP %in% ip_selected()$ips)%>%
-               # group_by(Major.Milestone)%>%
-               # filter(Approved_finish_date==Actual_date)%>%
-               # ungroup()%>%
-               filter(grepl('Start Date|End Date|Go live',Major.Milestone,ignore.case=T))
+              left_join(all_proj%>%select(IP=IP,internal_external=`Internal or External`))%>%
+              filter(grepl('Start Date|End Date|Go live',Major.Milestone,ignore.case=T))
     
     if(input$selectdir=='All'){
       schedule<-schedule%>%
@@ -216,38 +292,39 @@ shinyServer(function(input, output,session) {
     return(schedule)
   })
   
-  output$schedule_plt<-renderPlotly({
+  output$schedule_plt<-renderPlot({
     df<-schedule%>%filter(IP==ip_selected()$ip)
     
     shiny::validate((
       need(any(!is.na(df$Approved_finish_date)),'There is no information on project schedule')
     ))
     
-  
-    ggplotly(timeplot(df),height=450,tooltip=NULL)%>%
-      layout(legend=list(orientation='h',
-                         y=-10,
-                         x=0.2))
+      
+    timeplot(df)
   })
   
-  output$schedule_plt2<-renderPlotly({
-    df<-schedule_overview()
-    
-    # if(input$selectdir=='All'){
-    #   df<-df%>%
-    #     filter(grepl('Go live',Major.Milestone,ignore.case=T))
-    # }
-    
+  output$schedule_plt2<-renderPlot({
+    df<-schedule_overview()%>%filter(!is.na(Approved_finish_date))
+
     shiny::validate((
       need(any(!is.na(df$Approved_finish_date)),'There is no information on project schedule')
     ))
     
+    if(input$internal=="No"){
     
-    ggplotly(timeplot(df),height=450,tooltip=NULL)%>%
-            layout(legend=list(orientation='h',
-                               y=-10,
-                               x=0.2))
-    
+    timeplot(df)
+    # ggplotly(timeplot(df),height=450,tooltip=NULL)%>%
+    #         layout(legend=list(orientation='h', y=-10,x=0.2))
+      
+    }else{
+      
+      timeplot(df)+
+                   facet_grid(internal_external~.,shrink=FALSE)+ 
+                   theme(panel.spacing.y = unit(2,"lines"))
+      
+      # ggplotly(timeline_plot,height=800, tooltip=NULL)%>%
+      #   layout(legend=list(orientation='h',y=-10,x=0.2))
+    }
   })
   
   
@@ -264,10 +341,20 @@ shinyServer(function(input, output,session) {
   
   
   output$schedule_tb2<-DT::renderDataTable({
+    
+    if(input$internal=='No'){
     df<-schedule_overview()%>%
       select(Milestone=Major.Milestone,
              `Baseline Finish Date`=Approved_finish_date,
              `Actual/Forecasted Finish Date`=Actual_date)
+    }else{
+      df<-schedule_overview()%>%
+        select(Milestone=Major.Milestone,
+               `Baseline Finish Date`=Approved_finish_date,
+               `Actual/Forecasted Finish Date`=Actual_date,
+               `Internal or External`=internal_external)
+    
+    }
     
     DT::datatable(df,options = list(dom = 'tip'), rownames = FALSE)
   })
@@ -276,7 +363,6 @@ shinyServer(function(input, output,session) {
   
   output$overall2<-renderPlotly({
     
-    cols<-c('On Track'='#00B050','Caution'='#FFC000','Elevated Risk'='#C00000')
     
     df<-all_proj%>%
       filter(`Overall Project Health`!='Blue')%>%
@@ -286,28 +372,68 @@ shinyServer(function(input, output,session) {
     df$status<-factor(df$status,levels=c('On Track','Caution','Elevated Risk'))
     
     
-    p<-df%>%
-      ggplot(aes(x=status,y=`Approved Budget`,size=`Approved Budget`,color=status,text=dollar(`Approved Budget`)))+
-      scale_color_manual(values=cols)+
-      geom_point()+
-      geom_text(aes(label=paste0('IP',IP)),size=2.5,nudge_x=0.25,check_overlap = TRUE)+
-      scale_size_continuous(range=c(1,10))+
-      scale_y_continuous(limits=c(0,17000000),labels = dollar_y)+
-      theme_minimal()+
-      theme(axis.title.x=element_blank(),
-            axis.text.x =element_text(size=10),
-            legend.position ="none")
+    if(input$internal=='No'){
     
+    p<-status_plot(df)
+    ggplotly(p,tooltip='text',height=400)
     
-    ggplotly(p,tooltip='text')
-    
+    }else{
+      
+      p<-status_plot(df)+
+        facet_grid(`Internal or External`~.)+
+        theme(panel.spacing.y = unit(2,"lines"))
+      
+      ggplotly(p,tooltip='text')
+      
+    }
     
   })
   
+  
+  output$ui_output1<-renderUI({
+    fluidRow(
+      box(title='Overall Project Health',plotlyOutput('overall2',height=plot_height())),
+      box(title='Project Health and Current Stage',plotOutput('overall_stage2',height=plot_height()))
+    )
+  })
+  
+  output$ui_output2<-renderUI({
+    fluidRow(
+      box(title='Project Functionality',
+          tabsetPanel(id='tabs',
+                      tabPanel(title='Graph',
+                               plotOutput("function_plt",height=plot_height()))
+          )),
+      box(title='Project Portfolio Budget',
+          tabsetPanel(
+            tabPanel(title='Breakdown by Year',
+                     plotlyOutput('budget_plt2',height=plot_height())),
+            tabPanel(title='Table',
+                     DT::dataTableOutput('budget_tbl2')),
+            tabPanel(title='Projections',
+                     plotOutput('budget_all2',height=plot_height()))
+          )
+      )
+    )
+  })
+  
+  
+  output$ui_output3<-renderUI({
+    fluidRow(
+      box(title='Schedule',width=12,
+          plotOutput('schedule_plt2',height=plot_height2()),
+          br(),
+          br(),
+          DT::dataTableOutput('schedule_tb2'))
+    )
+    
+  })
+  
+  
+  
 output$overall_stage2<-renderPlot({
 
-    cols<-c('On Track'='#00B050','Caution'='#FFC000','Elevated Risk'='#C00000','Not yet started'='#1f77b4')
-    
+    if(input$internal=='No'){
     df<-all_proj%>%
       filter(IP %in% ip_selected()$ips)%>%
       group_by(stage,status)%>%
@@ -315,17 +441,21 @@ output$overall_stage2<-renderPlot({
     
     df$status<-factor(df$status,levels=c('On Track','Caution','Elevated Risk','Not yet started'))
     
-    p<-ggplot(df,aes(x=stage,y=count,fill=status))+geom_col(position='dodge')+
-      scale_fill_manual(values=cols)+
-      scale_y_continuous(breaks=c(0,1,2,3,4))+
-      geom_text(aes(y=count-0.5,label=IP),position=position_dodge(width=0.9))+
-      geom_text(aes(label=as.character(count)),position=position_dodge(width=0.9),vjust=-0.5)+
-      theme_minimal()+
-      theme(axis.title.x=element_blank(),
-            axis.text.x =element_text(size=12),
-            axis.title.y =element_blank(),
-            legend.title=element_blank()
-      )
+    p<-stage_plot(df)
+    
+    }else{
+    
+      df<-all_proj%>%
+        filter(IP %in% ip_selected()$ips)%>%
+        group_by(stage,status,`Internal or External`)%>%
+        summarise(IP=paste(paste0('IP',IP),collapse='\n'),count=n())
+      
+      df$status<-factor(df$status,levels=c('On Track','Caution','Elevated Risk','Not yet started'))
+      
+      p<-stage_plot(df)+ 
+        facet_grid(`Internal or External`~.,shrink=FALSE,space='free_y')+
+        theme(panel.spacing.y = unit(2,"lines"))
+    }
     
     p
   })
@@ -351,6 +481,14 @@ output$overall_stage2<-renderPlot({
             subtitle='Project Stage',color='blue',width=3)
  })
 
+ output$internal_external<-renderValueBox({
+   internal<-all_proj%>%
+     filter(IP ==input$selectip)%>%
+     pull(`Internal or External`)
+   
+   valueBox(tags$p(internal, style = "font-size: 80%;"),
+            subtitle='Internal or External ',color='blue',width=3)
+ })
   
  
  output$downloadData<-downloadHandler(

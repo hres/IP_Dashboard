@@ -15,6 +15,7 @@ ui<-dashboardPage(
                      conditionalPanel(
                        condition="input.sidebar == 'overview' ",
                        selectInput('selectdir',label="Select a Directorate",choices=directorate),
+                       radioButtons('internal','Show internal or external status:',c("Yes","No"),selected="No",inline=TRUE),
                        actionButton('info','View IP Name',icon=icon('eye'))
                      ),
                      
@@ -46,39 +47,9 @@ ui<-dashboardPage(
                        bsModal('modal','IP Name','info',tableOutput('ip_tbl'))
                        
                ),
-              
-              fluidRow(
-                box(title='Schedule',width=12,
-                    plotlyOutput('schedule_plt2'),
-                    br(),
-                    br(),
-                    br(),
-                    br(),
-                    DT::dataTableOutput('schedule_tb2'))
-              ),
-              
-              fluidRow(
-               box(title='Overall Project Health',plotlyOutput('overall2')),
-               box(title='Project Health and Current Stage',plotOutput('overall_stage2'))
-               ),
-              
-              fluidRow(
-               box(title='Project Functionality',
-                           tabsetPanel(id='tabs',
-                              tabPanel(title='Graph',
-                                  plotlyOutput("function_plt"))
-                           )),
-               box(title='Project Portfolio Budget',
-                       tabsetPanel(
-                           tabPanel(title='Breakdown by Year',
-                                    plotlyOutput('budget_plt2')),
-                           tabPanel(title='Table',
-                                    DT::dataTableOutput('budget_tbl2')),
-                           tabPanel(title='Projections',
-                                    plotOutput('budget_all2'))
-                          )
-                        )
-              )
+              uiOutput('ui_output3'),
+              uiOutput('ui_output1'),
+              uiOutput('ui_output2')
               
               # fluidRow(
               #   box(title='Project Risks',
@@ -95,14 +66,15 @@ ui<-dashboardPage(
           uiOutput('project_name'),
           tags$style(".small-box.bg-red {background-color: #C00000 !important;}"),
           valueBoxOutput('overall'),
-          valueBoxOutput('overall_stage')
+          valueBoxOutput('overall_stage'),
+          valueBoxOutput('internal_external')
           
      ),
      
      fluidRow(
        column(12,
               box(title='Schedule',width=NULL,
-                  plotlyOutput('schedule_plt'),
+                  plotOutput('schedule_plt'),
                   br(),
                   br(),
                   DT::dataTableOutput('schedule_tb')))
