@@ -28,13 +28,14 @@ shinyServer(function(input, output,session) {
     n<-all_proj%>%filter(IP %in% ip_selected()$ips)%>%distinct(`Internal or External`)
     
     if(input$internal=='Yes' & nrow(n)==2){
-      height<-850
+      height<-800
     }else{
       height<-450
     }
     
     height
   })
+
   
   
   observeEvent(input$contact,{
@@ -207,7 +208,9 @@ shinyServer(function(input, output,session) {
                   `Remaining Budget Projected`=sum(`Variance between remaining approved budget projected spending`,na.rm=T))%>%
         gather(cat,value,-internal_external)
       
-      budget_plot2(ds)+facet_grid(`internal_external`~.)
+      budget_plot2(ds)+
+        facet_grid(`internal_external`~.)+
+        theme(panel.spacing.y = unit(2,"lines"))
       
       
     }
@@ -220,7 +223,10 @@ shinyServer(function(input, output,session) {
     ggplotly(p,tooltip = "text")%>%layout(margin=list(b=50),xaxis=list(tickangle=-45))
   })
   
+  
   output$budget_plt2<-renderPlotly({
+    
+    plot_hlt<-plot_height()
     
     if(input$internal=='No'){
     
@@ -229,7 +235,8 @@ shinyServer(function(input, output,session) {
                     summarise(value=sum(value,na.rm=T))
    
      p<-budget_plot(ds)
-    ggplotly(p,tooltip = "text",height=400)%>%layout(margin=list(b=50),xaxis=list(tickangle=-45))
+     
+     ggplotly(p,tooltip = "text",height=plot_hlt)%>%layout(margin=list(b=50),xaxis=list(tickangle=-45))
     
     }else{
       
@@ -240,8 +247,12 @@ shinyServer(function(input, output,session) {
         summarise(value=sum(value,na.rm=T))
       
       
-      p<-budget_plot(ds)+facet_grid(`internal_external`~.)
-      ggplotly(p,tooltip = "text")%>%layout(margin=list(b=50),xaxis=list(tickangle=-45))
+      p<-budget_plot(ds)+
+         facet_grid(`internal_external`~.,shrink=FALSE,space='free_y')+
+         theme(panel.spacing.y = unit(2,"lines"))
+      
+      p
+      ggplotly(p,tooltip = "text")%>%layout(margin=list(b=50),xaxis=list(tickangle=-45),autosize=FALSE)
       
     }
   })
@@ -293,22 +304,27 @@ shinyServer(function(input, output,session) {
   })
   
   output$schedule_plt<-renderPlot({
+    
     df<-schedule%>%filter(IP==ip_selected()$ip)
     
     shiny::validate((
       need(any(!is.na(df$Approved_finish_date)),'There is no information on project schedule')
     ))
     
-      
     timeplot(df)
   })
   
   output$schedule_plt2<-renderPlot({
+    
+    withProgress(message='Plotting schedule',value=0, {
+      
     df<-schedule_overview()%>%filter(!is.na(Approved_finish_date))
 
     shiny::validate((
       need(any(!is.na(df$Approved_finish_date)),'There is no information on project schedule')
     ))
+    
+    incProgress(0.5)
     
     if(input$internal=="No"){
     
@@ -325,6 +341,8 @@ shinyServer(function(input, output,session) {
       # ggplotly(timeline_plot,height=800, tooltip=NULL)%>%
       #   layout(legend=list(orientation='h',y=-10,x=0.2))
     }
+    
+    })
   })
   
   
@@ -402,19 +420,19 @@ shinyServer(function(input, output,session) {
       box(title='Project Functionality',
           tabsetPanel(id='tabs',
                       tabPanel(title='Graph',
-                               plotOutput("function_plt",height=plot_height()))
+                               plotOutput("function_plt",height=450))
           )),
       box(title='Project Portfolio Budget',
           tabsetPanel(
             tabPanel(title='Breakdown by Year',
-                     plotlyOutput('budget_plt2',height=plot_height())),
+                     plotlyOutput('budget_plt2',height=450)),
             tabPanel(title='Table',
                      DT::dataTableOutput('budget_tbl2')),
             tabPanel(title='Projections',
-                     plotOutput('budget_all2',height=plot_height()))
+                     plotOutput('budget_all2',height=450)))
           )
       )
-    )
+    
   })
   
   

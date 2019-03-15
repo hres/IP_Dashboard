@@ -62,6 +62,7 @@ function_plot<-function(df){
   
   ggplot(df,aes(x=status,y=n,fill=status))+geom_col()+
     scale_fill_manual(values=cols)+
+    ylim(0,max(df$n+10))+
     geom_text(aes(label=as.character(n)),position=position_dodge(width=0.9),vjust=-0.5)+
     theme_minimal()+
     theme(axis.title.x=element_blank(),
@@ -72,14 +73,13 @@ function_plot<-function(df){
 }
 
 budget_plot<-function(ds){
-  p<-ggplot(ds,aes(x=Year,y=value,fill=var,text=paste0('Amount: $',prettyNum(value,big.mark=','))))+
+  
+    ggplot(ds,aes(x=Year,y=value,fill=var,text=paste0('Amount: $',prettyNum(value,big.mark=','))))+
     geom_bar(stat='identity',position='dodge')+
     scale_y_continuous(labels=dollar_y)+
     scale_fill_discrete(name = "")+
     labs(x='',y='')+
     theme_minimal()
-  
-  return(p)
   #ggplotly(p,tooltip = "text")%>%layout(margin=list(b=50),xaxis=list(tickangle=-45))
 }
 
@@ -90,10 +90,13 @@ dollar_y<-function(x){
 
 budget_plot2<-function(ds){
   
+  min<-abs(min(ds$value))*-2.5
+  max<-max(ds$value)*1.1
+  
   ds$col<-ifelse(ds$value>=0,'#1f77b4','#980008')
   p<-ggplot(ds,aes(x=cat,y=value,fill=col))+geom_bar(stat='identity')+
     scale_fill_manual(values=c('#1f77b4','#980008'))+
-    scale_y_continuous(labels=dollar_y)+
+    scale_y_continuous(labels=dollar_y,limits=c(min,max))+
     labs(x='',y='')+
     geom_text(aes(label=dollar(value),vjust=ifelse(value>0,-0.5,1.5)))+
     guides(fill=FALSE)+
@@ -111,7 +114,7 @@ stage_plot<-function(df){
 
   ggplot(df,aes(x=stage,y=count,fill=status))+geom_col(position='dodge')+
     scale_fill_manual(values=cols)+
-    scale_y_continuous(breaks=c(0,1,2,3,4))+
+    scale_y_continuous(breaks=c(0,1,2,3,4,5))+
     geom_text(aes(y=count-0.5,label=IP),position=position_dodge(width=0.9))+
     geom_text(aes(label=as.character(count)),position=position_dodge(width=0.9),vjust=-0.5)+
     theme_minimal()+

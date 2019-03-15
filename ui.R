@@ -1,6 +1,6 @@
 
 ui<-dashboardPage(
-  dashboardHeader(title=textOutput('header'),
+  dashboardHeader(title=paste0('HPFB IP Dashboard \n as of ',dat),
                   titleWidth=400),
   
   dashboardSidebar(width=150,
