@@ -9,35 +9,33 @@
 
 shinyServer(function(input, output,session) {
   
-  plot_height<-reactive({
-    
-    n<-all_proj%>%filter(IP %in% ip_selected()$ips)%>%distinct(`Internal or External`)
-    
-    if(input$internal=='Yes' & nrow(n)==2){
-      height<-600
-    }else{
-      height<-400
-    }
-    
-    height
-  })
-  
-  
-  plot_height2<-reactive({
-    
-    n<-all_proj%>%filter(IP %in% ip_selected()$ips)%>%distinct(`Internal or External`)
-    
-    if(input$internal=='Yes' & nrow(n)==2){
-      height<-800
-    }else{
-      height<-450
-    }
-    
-    height
-  })
+  # plot_height<-reactive({
+  #   
+  #   n<-all_proj%>%filter(IP %in% ip_selected()$ips)%>%distinct(`Internal or External`)
+  #   
+  #   if(input$internal=='Yes' & nrow(n)==2){
+  #     height<-600
+  #   }else{
+  #     height<-400
+  #   }
+  #   
+  #   height
+  # })
+  # 
+  # 
+  # plot_height2<-reactive({
+  #   
+  #   n<-all_proj%>%filter(IP %in% ip_selected()$ips)%>%distinct(`Internal or External`)
+  #   
+  #   if(input$internal=='Yes' & nrow(n)==2){
+  #     height<-800
+  #   }else{
+  #     height<-450
+  #   }
+  #   
+  #   height
+  # })
 
-  
-  
   observeEvent(input$contact,{
     
     showModal(modalDialog(
@@ -69,18 +67,18 @@ shinyServer(function(input, output,session) {
     name<-all_proj%>%filter(IP== input$selectip)%>%pull(`Project Name`)
     
     project_name<-paste0('IP',input$selectip,' ',name)
-    h1(project_name, 
-       style = "font-family: 'Arial';margin-left:50px;
-        font-weight: 500; line-height: 1.1; 
+    h2(project_name, 
+       style = "font-family: 'Arial';margin-left:20px;
+        font-weight: bold; line-height: 1.1; 
         color: #2E4053;")
   })
   
   output$project_name2<-renderUI({
     
     project_name<-paste0('Projects:',input$selectdir)
-    h1(project_name, 
-       style = "font-family: 'Arial';margin-left:50px;
-        font-weight: 500; line-height: 1.1; 
+    h2(project_name, 
+       style = "font-family: 'Arial';margin-left:20px;
+        font-weight: bold; line-height: 1.1; 
         color: #2E4053;")
   })
   
@@ -101,30 +99,22 @@ shinyServer(function(input, output,session) {
   
   output$function_plt<-renderPlot({
     
-    if(input$internal=='No'){
     summary<-functionality%>%
       filter(IP %in% ip_selected()$ips)%>%
-      dplyr::count(`Functionality Met? (Y/N)`)%>%
+      left_join(all_proj%>%select(IP=IP,internal_external=`Internal or External`))%>%
+      dplyr::count(`Functionality Met? (Y/N)`,internal_external)%>%
       rename(status=`Functionality Met? (Y/N)`)%>%
+      # mutate(color=case_when(status=='YES' & internal_external=='Internal'~"#97edbe",
+      #                        status=='YES' & internal_external=='Internal & External'~ "#00b050",
+      #                        status=='NO' & internal_external=='Internal'~"#eda8a8",
+      #                        status=='NO' & internal_external=='Internal & External'~ "#C00000"))
+      # 
       mutate(color=ifelse(status=='YES',"#00b050","#C00000"))
     
     function_plot(summary)
     
    
-    }else{
-      
-      summary<-functionality%>%
-        filter(IP %in% ip_selected()$ips)%>%
-        left_join(all_proj[,c('Project Name','Internal or External')])%>%
-        count(`Functionality Met? (Y/N)`,`Internal or External`)%>%
-        rename(status=`Functionality Met? (Y/N)`)%>%
-        mutate(color=ifelse(status=='YES',"#00b050","#C00000"))
-      
-      function_plot(summary)+
-        facet_grid(`Internal or External`~.)+
-        theme(panel.spacing.y = unit(2,"lines"))
-      
-    }
+    
   })
   
   output$function_tb<-DT::renderDataTable({
@@ -183,22 +173,11 @@ shinyServer(function(input, output,session) {
                            `Remaining Budget Projected`=sum(`Variance between remaining approved budget projected spending`,na.rm=T))%>%
                  gather(cat)
     
-    budget_plot2(ds)
+    budget_plot2(ds,FALSE)
   })
   
   output$budget_all2<-renderPlot({
     
-    if(input$internal=='No'){
-    ds<-budget%>%filter(IP %in% ip_selected()$ips)%>%
-                 summarise(`Approved Budget`=sum(`Approved Budget`,na.rm=T),
-                `Expenditure to Date`=sum(expenditure_to_date,na.rm=T),
-                `Remaining Budget Projected`=sum(`Variance between remaining approved budget projected spending`,na.rm=T))%>%
-                 gather(cat)
-    
-    budget_plot2(ds)
-    
-    }else{
-      
       ds<-budget%>%
         filter(IP %in% ip_selected()$ips)%>%
         left_join(all_proj%>%select(IP=IP,internal_external=`Internal or External`))%>%
@@ -208,53 +187,34 @@ shinyServer(function(input, output,session) {
                   `Remaining Budget Projected`=sum(`Variance between remaining approved budget projected spending`,na.rm=T))%>%
         gather(cat,value,-internal_external)
       
-      budget_plot2(ds)+
-        facet_grid(`internal_external`~.)+
-        theme(panel.spacing.y = unit(2,"lines"))
+      budget_plot2(ds,TRUE)
       
-      
-    }
+    
   })
   
   
   output$budget_plt<-renderPlotly({
     ds<-budget_yr%>%filter(IP==input$selectip)
-    p<-budget_plot(ds)
-    ggplotly(p,tooltip = "text")%>%layout(margin=list(b=50),xaxis=list(tickangle=-45))
+    budget_plot(ds)
+    #ggplotly(p,tooltip = "text")%>%layout(margin=list(b=50),xaxis=list(tickangle=-45))
   })
   
   
   output$budget_plt2<-renderPlotly({
-    
-    plot_hlt<-plot_height()
-    
-    if(input$internal=='No'){
-    
-    ds<-budget_yr%>%filter(IP %in% ip_selected()$ips)%>%
-                    group_by(var,Year)%>%
-                    summarise(value=sum(value,na.rm=T))
-   
-     p<-budget_plot(ds)
-     
-     ggplotly(p,tooltip = "text",height=plot_hlt)%>%layout(margin=list(b=50),xaxis=list(tickangle=-45))
-    
-    }else{
-      
+  
       ds<-budget_yr%>%
         filter(IP %in% ip_selected()$ips)%>%
-        left_join(all_proj%>%select(IP=IP,internal_external=`Internal or External`))%>%
-        group_by(var,Year,internal_external)%>%
-        summarise(value=sum(value,na.rm=T))
+        #left_join(all_proj%>%select(IP=IP,internal_external=`Internal or External`))%>%
+        group_by(Year,year,var)%>%
+        summarise(capital=sum(capital,na.rm=T),
+                  non_capital=sum(non_capital,na.rm=T))
       
+    budget_plot(ds)
       
-      p<-budget_plot(ds)+
-         facet_grid(`internal_external`~.,shrink=FALSE,space='free_y')+
-         theme(panel.spacing.y = unit(2,"lines"))
+      #ggplotly(p,tooltip = "text")%>%layout(margin=list(b=50),xaxis=list(tickangle=-45),
+      #                                      legend=list(y=1,x=0.7))
       
-      p
-      ggplotly(p,tooltip = "text")%>%layout(margin=list(b=50),xaxis=list(tickangle=-45),autosize=FALSE)
-      
-    }
+    
   })
   
   
@@ -269,14 +229,6 @@ shinyServer(function(input, output,session) {
   
   
   output$budget_tbl2<-DT::renderDataTable({
-    
-    if(input$internal=='No'){
-    ds<-budget_yr%>%filter(IP %in% ip_selected()$ips)%>%
-      group_by(var,Year)%>%
-      summarise(value=sum(value,na.rm=T))%>%
-      mutate(value=dollar(value))%>%
-      spread(var,value)
-    }else{
       
       ds<-budget_yr%>%
         filter(IP %in% ip_selected()$ips)%>%
@@ -285,7 +237,7 @@ shinyServer(function(input, output,session) {
         summarise(value=sum(value,na.rm=T))%>%
         mutate(value=dollar(value))%>%
         spread(var,value)
-    }
+    
     DT::datatable(ds)
   })
   
@@ -311,7 +263,7 @@ shinyServer(function(input, output,session) {
       need(any(!is.na(df$Approved_finish_date)),'There is no information on project schedule')
     ))
     
-    timeplot(df)
+    timeplot(df,F)
   })
   
   output$schedule_plt2<-renderPlot({
@@ -326,21 +278,9 @@ shinyServer(function(input, output,session) {
     
     incProgress(0.5)
     
-    if(input$internal=="No"){
-    
-    timeplot(df)
+    timeplot(df,T)
     # ggplotly(timeplot(df),height=450,tooltip=NULL)%>%
     #         layout(legend=list(orientation='h', y=-10,x=0.2))
-      
-    }else{
-      
-      timeplot(df)+
-                   facet_grid(internal_external~.,shrink=FALSE)+ 
-                   theme(panel.spacing.y = unit(2,"lines"))
-      
-      # ggplotly(timeline_plot,height=800, tooltip=NULL)%>%
-      #   layout(legend=list(orientation='h',y=-10,x=0.2))
-    }
     
     })
   })
@@ -360,19 +300,11 @@ shinyServer(function(input, output,session) {
   
   output$schedule_tb2<-DT::renderDataTable({
     
-    if(input$internal=='No'){
-    df<-schedule_overview()%>%
-      select(Milestone=Major.Milestone,
-             `Baseline Finish Date`=Approved_finish_date,
-             `Actual/Forecasted Finish Date`=Actual_date)
-    }else{
       df<-schedule_overview()%>%
         select(Milestone=Major.Milestone,
                `Baseline Finish Date`=Approved_finish_date,
                `Actual/Forecasted Finish Date`=Actual_date,
                `Internal or External`=internal_external)
-    
-    }
     
     DT::datatable(df,options = list(dom = 'tip'), rownames = FALSE)
   })
@@ -381,7 +313,7 @@ shinyServer(function(input, output,session) {
   
   output$overall2<-renderPlotly({
     
-    
+    all_proj$IP2<-paste0(all_proj$IP,':',substr(all_proj$`Internal or External`,1,1))
     df<-all_proj%>%
       filter(`Overall Project Health`!='Blue')%>%
       filter(IP %in% ip_selected()$ips)%>%
@@ -389,29 +321,16 @@ shinyServer(function(input, output,session) {
     
     df$status<-factor(df$status,levels=c('On Track','Caution','Elevated Risk'))
     
-    
-    if(input$internal=='No'){
-    
     p<-status_plot(df)
-    ggplotly(p,tooltip='text',height=400)
-    
-    }else{
-      
-      p<-status_plot(df)+
-        facet_grid(`Internal or External`~.)+
-        theme(panel.spacing.y = unit(2,"lines"))
-      
-      ggplotly(p,tooltip='text')
-      
-    }
+    ggplotly(p,tooltip='text')#%>%layout(legend=list(y=1,x=0.8))
     
   })
   
   
   output$ui_output1<-renderUI({
     fluidRow(
-      box(title='Overall Project Health',plotlyOutput('overall2',height=plot_height())),
-      box(title='Project Health and Current Stage',plotOutput('overall_stage2',height=plot_height()))
+      box(title='Overall Project Health',plotlyOutput('overall2',height=450)),
+      box(title='Project Health and Current Stage',plotOutput('overall_stage2',height=450))
     )
   })
   
@@ -439,7 +358,7 @@ shinyServer(function(input, output,session) {
   output$ui_output3<-renderUI({
     fluidRow(
       box(title='Schedule',width=12,
-          plotOutput('schedule_plt2',height=plot_height2()),
+          plotOutput('schedule_plt2',height=500),
           br(),
           br(),
           DT::dataTableOutput('schedule_tb2'))
@@ -450,36 +369,26 @@ shinyServer(function(input, output,session) {
   
   
 output$overall_stage2<-renderPlot({
-
-    if(input$internal=='No'){
+    
+    all_proj$IP2<-paste0(all_proj$IP,':\n',substr(all_proj$`Internal or External`,1,1))
+    
     df<-all_proj%>%
       filter(IP %in% ip_selected()$ips)%>%
       group_by(stage,status)%>%
-      summarise(IP=paste(paste0('IP',IP),collapse='\n'),count=n())
+      summarise(IP=paste(paste0('IP',IP2),collapse='\n'),count=n())
     
     df$status<-factor(df$status,levels=c('On Track','Caution','Elevated Risk','Not yet started'))
     
     p<-stage_plot(df)
     
-    }else{
-    
-      df<-all_proj%>%
-        filter(IP %in% ip_selected()$ips)%>%
-        group_by(stage,status,`Internal or External`)%>%
-        summarise(IP=paste(paste0('IP',IP),collapse='\n'),count=n())
-      
-      df$status<-factor(df$status,levels=c('On Track','Caution','Elevated Risk','Not yet started'))
-      
-      p<-stage_plot(df)+ 
-        facet_grid(`Internal or External`~.,shrink=FALSE,space='free_y')+
-        theme(panel.spacing.y = unit(2,"lines"))
-    }
-    
-    p
+    g=ggplotGrob(p)
+    g$layout$clip[g$layout$name == "panel"] = "off"
+    grid.draw(g)
   })
 
+
  output$overall<-renderValueBox({
-   status<-df<-all_proj%>%
+   status<-all_proj%>%
      filter(IP == ip_selected()$ip)%>%
      select(status,`Overall Project Health`)
      

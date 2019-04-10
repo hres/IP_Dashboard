@@ -1,7 +1,7 @@
 
 ui<-dashboardPage(
   dashboardHeader(title=paste0('HPFB IP Dashboard \n as of ',dat),
-                  titleWidth=400),
+                  titleWidth=500),
   
   dashboardSidebar(width=150,
                    sidebarMenu(id='sidebar',
@@ -15,7 +15,7 @@ ui<-dashboardPage(
                      conditionalPanel(
                        condition="input.sidebar == 'overview' ",
                        selectInput('selectdir',label="Select a Directorate",choices=directorate),
-                       radioButtons('internal','Show internal or external status:',c("Yes","No"),selected="No",inline=TRUE),
+                       #radioButtons('internal','Show internal or external status:',c("Yes","No"),selected="No",inline=TRUE),
                        actionButton('info','View IP Name',icon=icon('eye'))
                      ),
                      
@@ -37,6 +37,37 @@ ui<-dashboardPage(
                      actionButton('contact','Contact us',icon=icon('phone')))
   ),
   dashboardBody(
+    
+    tags$head(tags$style(HTML('
+      .main-header .logo {
+        font-family: Arial, Helvetica, sans-serif;
+        font-weight: bold;
+        font-size: 20px;
+      }
+
+     .skin-blue .main-header .logo:hover{
+        background-color: #333000;
+     }
+
+     .skin-blue .main-header .logo{
+        background-color: #333000;
+     }
+
+     .skin-blue .main-header .navbar{
+       background-color: #333000;
+     }
+
+     .skin-blue .main-sidebar {
+       background-color: #333000;
+     }
+
+     .skin-blue .main-sidebar .sidebar .sidebar-menu .active a{
+       background-color: #0278A4;
+
+    .skin-blue .main-sidebar .sidebar .sidebar-menu a:hover{
+       background-color: #0278A4;
+
+    '))),
     
     tabItems(
       
