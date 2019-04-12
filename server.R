@@ -268,7 +268,6 @@ shinyServer(function(input, output,session) {
   
   output$schedule_plt2<-renderPlot({
     
-    withProgress(message='Plotting schedule',value=0, {
       
     df<-schedule_overview()%>%filter(!is.na(Approved_finish_date))
 
@@ -282,7 +281,7 @@ shinyServer(function(input, output,session) {
     # ggplotly(timeplot(df),height=450,tooltip=NULL)%>%
     #         layout(legend=list(orientation='h', y=-10,x=0.2))
     
-    })
+   
   })
   
   
@@ -329,8 +328,10 @@ shinyServer(function(input, output,session) {
   
   output$ui_output1<-renderUI({
     fluidRow(
-      box(title='Overall Project Health',plotlyOutput('overall2',height=450)),
-      box(title='Project Health and Current Stage',plotOutput('overall_stage2',height=450))
+      box(title='Overall Project Health',
+          withSpinner(plotlyOutput('overall2',height=450))),
+      box(title='Project Health and Current Stage',
+          withSpinner(plotlyOutput('overall_stage2',height=450)))
     )
   })
   
@@ -339,16 +340,16 @@ shinyServer(function(input, output,session) {
       box(title='Project Functionality',
           tabsetPanel(id='tabs',
                       tabPanel(title='Graph',
-                               plotOutput("function_plt",height=450))
+                               withSpinner(plotOutput("function_plt",height=450)))
           )),
       box(title='Project Portfolio Budget',
           tabsetPanel(
             tabPanel(title='Breakdown by Year',
-                     plotlyOutput('budget_plt2',height=450)),
+                     withSpinner(plotlyOutput('budget_plt2',height=450))),
             tabPanel(title='Table',
                      DT::dataTableOutput('budget_tbl2')),
             tabPanel(title='Projections',
-                     plotOutput('budget_all2',height=450)))
+                     withSpinner(plotOutput('budget_all2',height=450))))
           )
       )
     
@@ -358,7 +359,7 @@ shinyServer(function(input, output,session) {
   output$ui_output3<-renderUI({
     fluidRow(
       box(title='Schedule',width=12,
-          plotOutput('schedule_plt2',height=500),
+          withSpinner(plotOutput('schedule_plt2',height=500)),
           br(),
           br(),
           DT::dataTableOutput('schedule_tb2'))
@@ -368,7 +369,7 @@ shinyServer(function(input, output,session) {
   
   
   
-output$overall_stage2<-renderPlot({
+output$overall_stage2<-renderPlotly({
     
     all_proj$IP2<-paste0(all_proj$IP,':\n',substr(all_proj$`Internal or External`,1,1))
     
@@ -379,11 +380,13 @@ output$overall_stage2<-renderPlot({
     
     df$status<-factor(df$status,levels=c('On Track','Caution','Elevated Risk','Not yet started'))
     
-    p<-stage_plot(df)
+    p=stage_plot(df)
     
-    g=ggplotGrob(p)
-    g$layout$clip[g$layout$name == "panel"] = "off"
-    grid.draw(g)
+    ggplotly(p,tooltip='none')%>%
+      layout(margin = list(b = 40, l=30))
+    # g=ggplotGrob(p)
+    # g$layout$clip[g$layout$name == "panel"] = "off"
+    # grid.draw(g)
   })
 
 

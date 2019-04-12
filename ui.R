@@ -105,7 +105,7 @@ ui<-dashboardPage(
      fluidRow(
        column(12,
               box(title='Schedule',width=NULL,
-                  plotOutput('schedule_plt'),
+                  withSpinner(plotOutput('schedule_plt')),
                   br(),
                   br(),
                   DT::dataTableOutput('schedule_tb')))
@@ -123,11 +123,11 @@ ui<-dashboardPage(
       box(title='Project Budget',height='500px',
           tabsetPanel(
             tabPanel(title='Breakdown by Year',
-                     plotlyOutput('budget_plt')),
+                     withSpinner(plotlyOutput('budget_plt'))),
             tabPanel(title='Table',
                      DT::dataTableOutput('budget_tbl')),
             tabPanel(title='Projections',
-                     plotOutput('budget_all')))
+                     withSpinner(plotOutput('budget_all'))))
             
        )),
     

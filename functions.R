@@ -12,6 +12,7 @@ function_plot<-function(df){
       #axis.ticks      = element_blank(),
       legend.background = element_blank(),
       legend.key        = element_blank(),
+      legend.justification = 'top',
       panel.grid       = element_line(colour = "grey84"),
       panel.grid.major = element_line(size = rel(0.3)),
       panel.grid.minor = element_line(size = rel(0.15)),
@@ -124,7 +125,9 @@ budget_plot2<-function(ds,internal){
     geom_text(aes(label=dollar(value),vjust=ifelse(value>0,-1,1.5)),position = position_dodge(width = 1))+
     theme_minimal()+
     theme(axis.title.x=element_blank(),
-          axis.text.x =element_text(size=11))
+          axis.text.x =element_text(size=11,family='verdana',color='#494949'),
+          legend.text=element_text(size=12,family='verdana',color='#494949'),
+          legend.justification = 'top')
   
 }
 
@@ -132,19 +135,22 @@ budget_plot2<-function(ds,internal){
 stage_plot<-function(df){
   cols<-c('On Track'='#00B050','Caution'='#FFC000','Elevated Risk'='#C00000','Not yet started'='#1f77b4')
   
-  label='E- External \n I-Internal'
+  label='E- External\nI- Internal'
 
   ggplot(df,aes(x=stage,y=count,group=status,fill=status))+geom_bar(stat='identity',position='dodge',width=0.9,alpha=0.9)+
     scale_fill_manual(values=cols)+
     scale_y_continuous(breaks=c(0,1,2,3,4,5))+
-    geom_text(aes(y=count-0.5,label=IP),position=position_dodge(width=0.9))+
-    annotate("text",x=6.5,y=2.2,label=label,hjust=-0.08)+
+    geom_text(aes(y=count-0.5,label=IP),position=position_dodge(width=0.9),size=2.5)+
+    annotate("text",x=length(unique(df$stage)),y=3,label=label,size=3,color='#494949')+
     theme_minimal()+
     labs(y='Number of IP')+
     theme(axis.title.x=element_blank(),
-          axis.text.x =element_text(size=12),
-          legend.title=element_blank()
-    )
+          #axis.text.x =element_text(size=12),
+          legend.title=element_blank())
+          #legend.justification = 'top',
+          #legend.text=element_text(size=12,color='#494949'),
+          #legend.spacing = unit(1.0,'cm'))
+    
 }
 
 status_plot<-function(df){
@@ -157,7 +163,7 @@ status_plot<-function(df){
   # df<-df%>%arrange(status,desc(`Approved Budget`))
   # df$index<-ifelse(as.numeric(rownames(df))%%2==0,1,-1)
   # df$txt_position<-df$txt_position+0.3*df$index
-  label='E- External \n I-Internal'
+  label='E- External\nI- Internal'
   
   df%>%
     arrange(status)%>%
@@ -169,7 +175,7 @@ status_plot<-function(df){
     scale_y_continuous(limits=c(0,17000000),breaks=seq(1500000,20000000,2000000),labels = dollar_y)+
     theme_minimal()+
     labs(x='IP Project')+
-    annotate("text",x=10.5,y=1.2*10^7,label=label,hjust=-0.08)+
+    annotate("text",x=length(unique(df$IP)),y=17*10^6,label=label,size=3)+
     theme(axis.text.x =element_blank(),legend.position='none')
   
 }
@@ -242,7 +248,7 @@ timeplot<-function(df,internal){
           axis.ticks.x =element_blank(),
           axis.line.x =element_blank(),
           legend.position="bottom",
-          legend.text=element_text(size=12,family='sans'),
+          legend.text=element_text(size=12,family='verdana',color='#494949'),
           strip.text.y = element_text(size = 10))
   
   return(timeline_plot)
