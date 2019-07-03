@@ -27,8 +27,16 @@ ui<-dashboardPage(
                      downloadButton('downloadData','Data'),
                      br(),
                      br(),
-                     tags$style(type="text/css", "#downloadreport {color: black;margin-left:10px;}"),
-                     downloadButton('downloadreport','Report'),
+                     conditionalPanel(
+                       condition="input.sidebar == 'individual' ",
+                       tags$style(type="text/css", "#downloadreport_individual {color: black;margin-left:10px;}"),
+                       downloadButton('downloadreport_individual','Report')
+                     ),
+                     conditionalPanel(
+                       condition="input.sidebar == 'overview' ",
+                       tags$style(type="text/css", "#downloadreport_overview {color: black;margin-left:10px;}"),
+                       downloadButton('downloadreport_overview','Report')
+                     ),
                      br(),
                      br(),
                      br(),

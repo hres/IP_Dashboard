@@ -1,0 +1,136 @@
+---
+title: "HPFB Project Dashboard"
+output: 
+  pdf_document:
+    latex_engine: xelatex
+    sansfont: Calibri
+always_allow_html: yes
+header-includes:
+  - \usepackage{booktabs}
+  - \usepackage{longtable}
+  - \usepackage{float}
+  - \usepackage{pdflscape}
+  - \newcommand{\blandscape}{\begin{landscape}}
+  - \newcommand{\elandscape}{\end{landscape}}
+  - \usepackage{array}
+  - \usepackage{multirow}
+  - \usepackage{wrapfig}
+  - \usepackage{colortbl}
+  - \usepackage{tabu}
+  - \usepackage{threeparttable}
+  - \usepackage{threeparttablex}
+  - \usepackage[normalem]{ulem}
+  - \usepackage{makecell}
+  - \usepackage{xcolor}
+---
+
+```{r,echo=FALSE}
+library(knitr)
+library(kableExtra)
+knitr::opts_chunk$set(echo=FALSE,warning=FALSE,message=FALSE)
+options(knitr.table.format='latex')
+```
+
+Created on `r format(Sys.Date(),"%B %d,%Y")`
+
+# `r paste0('IP',ip_selected()$ip)`
+
+This reports presents the project portofolio. Project health is evaluated by three components: Deliverability of funtional elements, budget status and schedule. An interactive dashboard can be found at [shiny.hres.ca/IP_dashboard](shiny.hres.ca/IP_dashboard)
+
+* Color code rules:
+   + *Red:* Significant course correction may be required. One or more of the intended project outputs may not be achieved. Identified changes may negatively impact the project's scope, cost or schedule and significant course correction may be required. 
+   + *Green:* The project is on track. The intended project outputs are expected to be achieved. Identified changes are not expected to negatively impact the project's scope, cost or schedule. 
+   + *Yellow:* Some course correction may be required. One or more of the intended project outputs may not be achieved. Identified changes may negatively impact the project's scope, cost or schedule and some course correction may be required.
+
+
+```{r}
+project_health<-all_proj%>%filter(IP == ip_selected()$ip)%>%pull(status)
+project_stage<-all_proj%>%filter(IP ==input$selectip)%>%pull(stage)
+project_stage<-gsub('\n',' ',project_stage)
+project_internal<-all_proj%>%filter(IP == ip_selected()$ip)%>%pull(`Internal or External`)
+```
+
+
+### `r paste0('Project Health : ',project_health) `
+### `r paste0('Stage : ',project_stage)`
+### `r paste0('Facing : ',project_internal)`
+
+\newpage
+### Budget
+##### Breakdown by Year
+
+```{r,fig.width=10,fig.height=2}
+ds5<-budget_yr%>%filter(IP==input$selectip)
+p2<-budget_plot(ds5)%>%layout(height=500)
+
+  #tmpfile<-tempfile(fileext='.png')
+  export(p2,file='test.png')
+```
+
+```{r}
+ds6<-budget_yr%>%filter(IP==input$selectip)%>%
+                    mutate(value=dollar(value))%>%
+                    spread(var,value)
+    
+knitr::kable(ds6)
+```
+
+\newpage
+
+##### Projections
+```{r,fig.width=10}
+ds4<-budget%>%filter(IP==input$selectip)%>%
+                 summarise(`Approved Budget`=sum(`Approved Budget`,na.rm=T),
+                           `Expenditure to Date`=sum(expenditure_to_date,na.rm=T),
+                           `Remaining Budget Projected`=sum(`Variance between remaining approved budget projected spending`,na.rm=T))%>%
+                 gather(cat)
+    
+    budget_plot2(ds4,F)
+```
+
+\newpage
+\blandscape
+
+### Schedule
+```{r,message=FALSE,warning=FALSE,fig.width=12}
+df5<-schedule%>%filter(IP==ip_selected()$ip)
+    
+timeplot(df5,F)
+    
+```
+
+
+```{r}
+df<-schedule%>%filter(IP==ip_selected()$ip)%>%
+        #filter(grepl('Start Date|End Date|Go live',Major.Milestone,ignore.case=T))%>%
+        select(Milestone=Major.Milestone,Date=Approved_finish_date)
+    
+knitr::kable(df)
+```
+
+
+### Project Risks
+
+```{r}
+proj_risk%>%filter(IP == input$selectip)%>%
+                      select(3:7)%>%
+                      kable('latex',booktabs=T)%>%
+                      kable_styling(full_width=F)%>%
+                      column_spec(2,width='10em')%>%
+                      column_spec(5,width='20em')
+```
+
+
+### Project Issues
+```{r}
+proj_issue%>%filter(IP == input$selectip)%>%
+        select(3:7)%>%
+        kable('latex',booktabs=T)%>%
+        kable_styling(full_width=F)%>%
+        column_spec(2,width='10em')%>%
+        column_spec(5,width='20em')
+      
+```
+
+\elandscape
+\newpage

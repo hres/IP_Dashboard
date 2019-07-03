@@ -27,6 +27,7 @@ header-includes:
 ```{r,echo=FALSE}
 library(knitr)
 library(kableExtra)
+library(processx)
 knitr::opts_chunk$set(echo=FALSE,warning=FALSE,message=FALSE)
 options(knitr.table.format='latex')
 ```
@@ -94,6 +95,7 @@ This reports presents the project portofolio. Project health is evaluated by thr
 
 ### Budget
 ##### Breakdown by Year
+
 ```{r,fig.width=10,fig.height=4}
   ds<-budget_yr%>%
         filter(IP %in% ip_selected()$ips)%>%
@@ -104,21 +106,25 @@ This reports presents the project portofolio. Project health is evaluated by thr
       
   p<-budget_plot(ds)
   
-  tmpfile<-tempfile(fileext='.png')
-  export(p,file=tmpfile)
+  #tmpfile<-tempfile(fileext='.png')
+  export(p,file='test.png')
 ```
 
 
 ```{r}
-ds3=budget_yr%>%
+ds3= budget_yr%>%
         filter(IP %in% ip_selected()$ips)%>%
-        left_join(all_proj%>%select(IP=IP,internal_external=`Internal or External`))%>%
-        group_by(var,Year,internal_external)%>%
-        summarise(value=sum(value,na.rm=T))
+        group_by(Year,year,var)%>%
+        summarise(Capital=sum(capital,na.rm=T),
+                  Non_capital=sum(non_capital,na.rm=T),
+                  Value=sum(value,na.rm=T))%>%
+        mutate_at(c('Capital','Non_capital','Value'),dollar)
+      
     
 knitr::kable(ds3)
 ```
 
+\newpage
 ##### Projections
 ```{r,fig.width=10}
  ds<-budget%>%
@@ -132,6 +138,7 @@ knitr::kable(ds3)
       
       budget_plot2(ds,TRUE)
 ```
+
 \newpage
 \blandscape
 
@@ -159,96 +166,6 @@ knitr::kable(df,format='latex',
                 booktabs= TRUE,
                 longtable=FALSE)
 ```
-\elandscape
-
-\newpage
-
-#Individual Portofolio:
-```{r}
-project_health<-all_proj%>%filter(IP == ip_selected()$ip)%>%pull(status)
-project_stage<-all_proj%>%filter(IP ==input$selectip)%>%pull(stage)
-project_stage<-gsub('\n',' ',project_stage)
-project_internal<-all_proj%>%filter(IP == ip_selected()$ip)%>%pull(`Internal or External`)
-```
-
-
-## `r paste0('IP',ip_selected()$ip)`
-### `r paste0('Project Health : ',project_health) `
-### `r paste0('Stage : ',project_stage)`
-### `r paste0('Facing : ',project_internal)`
-
-### Budget
-##### Breakdown by Year
-
-```{r,fig.width=10,fig.height=4}
-ds5<-budget_yr%>%filter(IP==input$selectip)
-p2<-budget_plot(ds5)
-
-  tmpfile<-tempfile(fileext='.png')
-  export(p2,file=tmpfile)
-```
-
-```{r}
-ds6<-budget_yr%>%filter(IP==input$selectip)%>%
-                    mutate(value=dollar(value))%>%
-                    spread(var,value)
-    
-knitr::kable(ds6)
-```
-
-\newpage
-##### Projections
-```{r,fig.width=10}
-ds4<-budget%>%filter(IP==input$selectip)%>%
-                 summarise(`Approved Budget`=sum(`Approved Budget`,na.rm=T),
-                           `Expenditure to Date`=sum(expenditure_to_date,na.rm=T),
-                           `Remaining Budget Projected`=sum(`Variance between remaining approved budget projected spending`,na.rm=T))%>%
-                 gather(cat)
-    
-    budget_plot2(ds4,F)
-```
-
-\newpage
-\blandscape
-
-### Schedule
-```{r,message=FALSE,warning=FALSE,fig.width=12}
-df5<-schedule%>%filter(IP==ip_selected()$ip)
-    
-timeplot(df5,F)
-    
-```
-
-```{r}
-df<-schedule%>%filter(IP==ip_selected()$ip)%>%
-        #filter(grepl('Start Date|End Date|Go live',Major.Milestone,ignore.case=T))%>%
-        select(Milestone=Major.Milestone,Date=Approved_finish_date)
-    
-knitr::kable(df)
-```
-
-
-### Project Risks
-
-```{r}
-proj_risk%>%filter(IP == input$selectip)%>%
-                      select(3:7)%>%
-                      kable('latex',booktabs=T)%>%
-                      kable_styling(full_width=F)%>%
-                      column_spec(2,width='10em')%>%
-                      column_spec(5,width='20em')
-```
-
-
-### Project Issues
-```{r}
-proj_issue%>%filter(IP == input$selectip)%>%
-        select(3:7)%>%
-        kable('latex',booktabs=T)%>%
-        kable_styling(full_width=F)%>%
-        column_spec(2,width='10em')%>%
-        column_spec(5,width='20em')
-      
-```
 
 \elandscape
+\newpage

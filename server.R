@@ -222,7 +222,8 @@ shinyServer(function(input, output,session) {
   
     ds<-budget_yr%>%filter(IP==input$selectip)%>%
                     mutate(value=dollar(value))%>%
-                    spread(var,value)
+                    spread(var,value)%>%
+                    select(-year)
     
     DT::datatable(ds)
   })
@@ -232,11 +233,18 @@ shinyServer(function(input, output,session) {
       
       ds<-budget_yr%>%
         filter(IP %in% ip_selected()$ips)%>%
-        left_join(all_proj%>%select(IP=IP,internal_external=`Internal or External`))%>%
-        group_by(var,Year,internal_external)%>%
-        summarise(value=sum(value,na.rm=T))%>%
-        mutate(value=dollar(value))%>%
-        spread(var,value)
+        group_by(Year,year,var)%>%
+        summarise(Capital=sum(capital,na.rm=T),
+                  Non_capital=sum(non_capital,na.rm=T),
+                  Value=sum(value,na.rm=T))%>%
+        mutate_at(c('Capital','Non_capital','Value'),dollar)
+      
+        
+        # left_join(all_proj%>%select(IP=IP,internal_external=`Internal or External`))%>%
+        # group_by(var,Year,internal_external)%>%
+        # summarise(value=sum(value,na.rm=T))%>%
+        # mutate(value=dollar(value))%>%
+        # spread(var,value)
     
     DT::datatable(ds)
   })
@@ -434,26 +442,45 @@ output$overall_stage2<-renderPlotly({
       }
     )
     
-    
-    output$downloadreport<-downloadHandler(
+ 
+ output$downloadreport_overview<-downloadHandler(
       filename='report.pdf',
-      
+        
       content = function(file) {
-        src <- normalizePath('report.Rmd')
+        src <- normalizePath('report_overall.Rmd')
         
         # temporarily switch to the temp dir, in case you do not have write
         # permission to the current working directory
         owd <- setwd(tempdir())
         on.exit(setwd(owd))
-        file.copy(src, 'report.Rmd', overwrite = TRUE)
+        file.copy(src, 'report_overall.Rmd', overwrite = TRUE)
         
         library(rmarkdown)
-        out <- render('report.Rmd', pdf_document())
+        out <- render('report_overall.Rmd', pdf_document())
         file.rename(out, file)
-        
       }
-     
-        )
+  )
+ 
+ 
+ output$downloadreport_individual<-downloadHandler(
+   
+   filename='report.pdf',
+  
+  content = function(file) {
+    src <- normalizePath('report_individual.Rmd')
+    
+    # temporarily switch to the temp dir, in case you do not have write
+    # permission to the current working directory
+    owd <- setwd(tempdir())
+    on.exit(setwd(owd))
+    file.copy(src, 'report_individual.Rmd', overwrite = TRUE)
+    
+    library(rmarkdown)
+    out <- render('report_individual.Rmd', pdf_document())
+    file.rename(out, file)
+  }
+  
+ )
      
     output$proj_risk_tb<-DT::renderDataTable({
       options<- list(pageLength=5,
