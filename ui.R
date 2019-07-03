@@ -105,7 +105,7 @@ ui<-dashboardPage(
      fluidRow(
        column(12,
               box(title='Schedule',width=NULL,
-                  withSpinner(plotOutput('schedule_plt')),
+                  withSpinner(plotlyOutput('schedule_plt')),
                   br(),
                   br(),
                   DT::dataTableOutput('schedule_tb')))

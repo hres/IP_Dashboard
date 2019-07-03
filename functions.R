@@ -125,8 +125,8 @@ budget_plot2<-function(ds,internal){
     geom_text(aes(label=dollar(value),vjust=ifelse(value>0,-1,1.5)),position = position_dodge(width = 1))+
     theme_minimal()+
     theme(axis.title.x=element_blank(),
-          axis.text.x =element_text(size=11,family='verdana',color='#494949'),
-          legend.text=element_text(size=12,family='verdana',color='#494949'),
+          axis.text.x =element_text(size=11,family='sans',color='#494949'),
+          legend.text=element_text(size=12,family='sans',color='#494949'),
           legend.justification = 'top')
   
 }
@@ -188,7 +188,7 @@ timeplot<-function(df,internal){
   
   df$Schedule.Health <- factor(df$Schedule.Health, levels=status_levels, ordered=TRUE)
   
-  positions <- c(0.4, -0.4, 0.5, -0.5,0.9,-0.9,1.3, -1.3)
+  positions <- c(0.4, -0.4, 0.5, -0.5,0.9,-0.9,1.25, -1.25)
   directions <- c(1, -1)
   
   line_pos <- data.frame(
@@ -221,7 +221,10 @@ timeplot<-function(df,internal){
     geom_segment(data=df[df$month_count == 1,], aes(y=position,yend=0,xend=Actual_date), color='black', size=0.2)+
     geom_point(aes(y=0,shape=internal_external), size=4)+  # Plot scatter points at zero and date
     geom_text(data=month_df, aes(x=month_date_range,y=-0.1,label=month_format),size=4,family='sans',vjust=0.5, color='gray23')+
-    geom_text(aes(y=text_position,label=Major.Milestone),size=4.5,family='sans')
+    geom_text(aes(y=text_position,label=Major.Milestone),size=4.5,family='sans')+
+    theme(
+      legend.text=element_text(size=12,family='sans',color='#494949')
+    )
    
   }else{
   timeline_plot<-ggplot(df,aes(x=Actual_date,y=0,label=Major.Milestone,color=Schedule.Health))+
@@ -231,9 +234,12 @@ timeplot<-function(df,internal){
       geom_hline(yintercept=0, color = "black", size=0.3)+
       # Plot vertical segment lines for milestones
       geom_segment(data=df[df$month_count == 1,], aes(y=position,yend=0,xend=Actual_date), color='black', size=0.2)+
-      geom_point(aes(y=0), size=4)+  # Plot scatter points at zero and date
-      geom_text(data=month_df, aes(x=month_date_range,y=-0.1,label=month_format),size=4,family='sans',vjust=0.5, color='gray23')+
-      geom_text(aes(y=text_position,label=Major.Milestone),size=4.5,family='sans') 
+      geom_point(aes(y=0), size=3)+  # Plot scatter points at zero and date
+      geom_text(data=month_df, aes(x=month_date_range,y=-0.1,label=month_format),vjust=0.5, color='gray23',size=3)+
+      geom_text(aes(y=text_position,label=Major.Milestone),size=3)+
+      theme(
+      legend.text=element_text(size=8,color='#494949')
+    )
   
   }
   
@@ -247,9 +253,7 @@ timeplot<-function(df,internal){
           axis.text.x =element_blank(),
           axis.ticks.x =element_blank(),
           axis.line.x =element_blank(),
-          legend.position="bottom",
-          legend.text=element_text(size=12,family='verdana',color='#494949'),
-          strip.text.y = element_text(size = 10))
+          legend.position="bottom")
   
   return(timeline_plot)
 }

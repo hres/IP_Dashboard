@@ -255,7 +255,7 @@ shinyServer(function(input, output,session) {
     return(schedule)
   })
   
-  output$schedule_plt<-renderPlot({
+  output$schedule_plt<-renderPlotly({
     
     df<-schedule%>%filter(IP==ip_selected()$ip)
     
@@ -263,7 +263,8 @@ shinyServer(function(input, output,session) {
       need(any(!is.na(df$Approved_finish_date)),'There is no information on project schedule')
     ))
     
-    timeplot(df,F)
+    timeplot(df,F)%>%ggplotly(height=450,tooltip=NULL)%>%
+                     layout(legend=list(orientation='h', y=-10,x=0.2))
   })
   
   output$schedule_plt2<-renderPlot({
@@ -278,8 +279,8 @@ shinyServer(function(input, output,session) {
     incProgress(0.5)
     
     timeplot(df,T)
-    # ggplotly(timeplot(df),height=450,tooltip=NULL)%>%
-    #         layout(legend=list(orientation='h', y=-10,x=0.2))
+     # ggplotly(timeplot(df,T),height=450,tooltip=NULL)%>%
+     #         layout(legend=list(orientation='h', y=-10,x=0.2))
     
    
   })
