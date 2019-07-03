@@ -27,7 +27,6 @@ header-includes:
 ```{r,echo=FALSE}
 library(knitr)
 library(kableExtra)
-library(processx)
 knitr::opts_chunk$set(echo=FALSE,warning=FALSE,message=FALSE)
 options(knitr.table.format='latex')
 ```
@@ -104,7 +103,7 @@ This reports presents the project portofolio. Project health is evaluated by thr
         summarise(capital=sum(capital,na.rm=T),
                   non_capital=sum(non_capital,na.rm=T))
       
-  p<-budget_plot(ds)
+  p<-budget_plot(ds)%>%layout(height=500)
   
   #tmpfile<-tempfile(fileext='.png')
   export(p,file='test.png')
