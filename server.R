@@ -221,9 +221,9 @@ shinyServer(function(input, output,session) {
   output$budget_tbl<-DT::renderDataTable({
   
     ds<-budget_yr%>%filter(IP==input$selectip)%>%
-                    mutate(value=dollar(value))%>%
                     spread(var,value)%>%
-                    select(-year)
+                    select(-year)%>%
+                    mutate_at(c('capital','non_capital','Project Authority','Project Expenditures'),dollar)
     
     DT::datatable(ds)
   })

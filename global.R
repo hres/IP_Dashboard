@@ -43,7 +43,7 @@ all_proj$`Internal or External`[all_proj$`Internal or External`=='Both']<-'Exter
 dat<-substring(file.info('data.xlsx')$mtime,1,11)
 
 #add capitalization data to budget_yr:
-capital<-read.csv('IP_captalization.csv',stringsAsFactors = F)
+capital<-read_excel('data.xlsx',8)
 capital$var<-'Project Authority'
 budget_yr%<>%left_join(capital)
 budget_yr$capital<-ifelse(is.na(budget_yr$capital),0,budget_yr$capital)
