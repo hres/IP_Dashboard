@@ -44,24 +44,34 @@ function_plot<-function(df){
 
 
 budget_plot<-function(ds){
+  
+  ds$total<-ds$capital+ds$non_capital
  
+  ds<-ds%>%
+    mutate(label=case_when(var=='Project Expenditures' ~ paste0('Expenditure:$',prettyNum(non_capital,big.mark=',')),
+                           var=='Project Authority' & capital !=0 ~ paste0('Authority: $',prettyNum(total,big.mark=','),'\n',
+                                                                           'Non-Capital: $',prettyNum(non_capital,big.mark=',')),
+                           var=='Project Authority' & capital ==0 ~ paste0('Authority: $',prettyNum(total,big.mark=','))))
+  
+  
   plot_ly(ds%>%filter(var=='Project Authority'),x=~year-0.2,y=~capital,type='bar',name='Project Authority - Capital',
           marker=list(color='rgb(252,205,201)'),
           hoverinfo='text',
-          text=~paste('Amount: $',prettyNum(capital,big.mark=',')))%>%
+          text=~paste('Capital: $',prettyNum(capital,big.mark=',')))%>%
     add_trace(y=~non_capital,name='Project Authority - Non-Capital',marker=list(color='rgb(248,118,109'),
               hoverinfo='text',
-              text=~paste('Amount: $',prettyNum(non_capital,big.mark=',')))%>%
+              text=~ label)%>%
     layout(barmode='stack',yaxis=list(title='Budget'))%>%
     add_trace(data=ds%>%filter(var=='Project Expenditures'),x=~year+0.2,y=~non_capital,type='bar',name='Project Expenditure',
               marker=list(color='rgb(0,191,196'),
               hoverinfo='text',
-              text=~paste('Amount: $',prettyNum(non_capital,big.mark=',')))%>%
+              text=~label)%>%
     layout(xaxis=list(title='Fiscal Year',
                       ticktext=list("2016-17","2017-18","2018-19","2019-20","2020-21","2021-22","2022-23"),
                       tickvals = list(2016, 2017, 2018, 2019, 2020,2021,2022),
                       tickmode='array'))%>%
     layout(legend=list(y=1,x=0.7))
+  
   
   # if(internal==TRUE){
   #   ds$internal_external<-factor(ds$internal_external,levels=c('External','Internal'))
