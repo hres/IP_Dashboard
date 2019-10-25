@@ -1,0 +1,170 @@
+---
+title: "HPFB Project Dashboard"
+output: 
+  pdf_document:
+    latex_engine: xelatex
+    sansfont: Calibri
+always_allow_html: yes
+header-includes:
+  - \usepackage{booktabs}
+  - \usepackage{longtable}
+  - \usepackage{float}
+  - \usepackage{pdflscape}
+  - \newcommand{\blandscape}{\begin{landscape}}
+  - \newcommand{\elandscape}{\end{landscape}}
+  - \usepackage{array}
+  - \usepackage{multirow}
+  - \usepackage{wrapfig}
+  - \usepackage{colortbl}
+  - \usepackage{tabu}
+  - \usepackage{threeparttable}
+  - \usepackage{threeparttablex}
+  - \usepackage[normalem]{ulem}
+  - \usepackage{makecell}
+  - \usepackage{xcolor}
+---
+
+```{r,echo=FALSE}
+library(knitr)
+library(kableExtra)
+knitr::opts_chunk$set(echo=FALSE,warning=FALSE,message=FALSE)
+options(knitr.table.format='latex')
+```
+
+Created on `r format(Sys.Date(),"%B %d,%Y")`
+
+# Overall Portofolio:
+## Project: `r ip_selected()$ips`
+
+This reports presents the project portofolio. Project health is evaluated by three components: Deliverability of funtional elements, budget status and schedule. An interactive dashboard can be found at [shiny.hres.ca/IP_dashboard](shiny.hres.ca/IP_dashboard)
+
+* Color code rules:
+   + *Red:* Significant course correction may be required. One or more of the intended project outputs may not be achieved. Identified changes may negatively impact the project's scope, cost or schedule and significant course correction may be required. 
+   + *Green:* The project is on track. The intended project outputs are expected to be achieved. Identified changes are not expected to negatively impact the project's scope, cost or schedule. 
+   + *Yellow:* Some course correction may be required. One or more of the intended project outputs may not be achieved. Identified changes may negatively impact the project's scope, cost or schedule and some course correction may be required.
+
+### Overall Project Health
+
+```{r,message=FALSE,warning=FALSE}
+  all_proj$IP2<-paste0(all_proj$IP,':',all_proj$`Internal or External`)
+    df<-all_proj%>%
+      filter(`Overall Project Health`!='Blue')%>%
+      filter(IP %in% ip_selected()$ips)%>%
+      left_join(budget[,c('IP','Approved Budget')])
+    
+    df$status<-factor(df$status,levels=c('On Track','Caution','Elevated Risk'))
+    
+    status_plot(df)
+    
+```
+
+### Stage & Project Health
+```{r,fig.width=10}
+  all_proj$IP2<-paste0(all_proj$IP,':\n',all_proj$`Internal or External`)
+    df<-all_proj%>%
+      filter(IP %in% ip_selected()$ips)%>%
+      group_by(stage,status)%>%
+      summarise(IP=paste(paste0('IP',IP2),collapse='\n'),count=n())
+    
+    df$status<-factor(df$status,levels=c('On Track','Caution','Elevated Risk','Not yet started'))
+    
+    p<-stage_plot(df)
+    
+    p
+    
+```
+
+### Project functionality
+```{r,warning=FALSE,message=FALSE}
+  summary<-functionality%>%
+      filter(IP %in% ip_selected()$ips)%>%
+      left_join(all_proj%>%select(IP=IP,internal_external=`Internal or External`))%>%
+      dplyr::count(`Functionality Met? (Y/N)`,internal_external)%>%
+      rename(status=`Functionality Met? (Y/N)`)%>%
+      # mutate(color=case_when(status=='YES' & internal_external=='Internal'~"#97edbe",
+      #                        status=='YES' & internal_external=='Internal & External'~ "#00b050",
+      #                        status=='NO' & internal_external=='Internal'~"#eda8a8",
+      #                        status=='NO' & internal_external=='Internal & External'~ "#C00000"))
+      # 
+      mutate(color=ifelse(status=='YES',"#00b050","#C00000"))
+    
+    function_plot(summary)
+```
+
+
+### Budget
+##### Breakdown by Year
+
+```{r,fig.width=10,fig.height=4}
+  ds<-budget_yr%>%
+        filter(IP %in% ip_selected()$ips)%>%
+        #left_join(all_proj%>%select(IP=IP,internal_external=`Internal or External`))%>%
+        group_by(Year,year,var)%>%
+        summarise(capital=sum(capital,na.rm=T),
+                  non_capital=sum(non_capital,na.rm=T))
+      
+  p<-budget_plot(ds)%>%layout(height=500)
+  
+  #tmpfile<-tempfile(fileext='.png')
+  export(p,file='test.png')
+```
+
+
+```{r}
+ds3= budget_yr%>%
+        filter(IP %in% ip_selected()$ips)%>%
+        group_by(Year,year,var)%>%
+        summarise(Capital=sum(capital,na.rm=T),
+                  Non_capital=sum(non_capital,na.rm=T),
+                  Value=sum(value,na.rm=T))%>%
+        mutate_at(c('Capital','Non_capital','Value'),dollar)
+      
+    
+knitr::kable(ds3)
+```
+
+\newpage
+##### Projections
+```{r,fig.width=10}
+ ds<-budget%>%
+        filter(IP %in% ip_selected()$ips)%>%
+        left_join(all_proj%>%select(IP=IP,internal_external=`Internal or External`))%>%
+        group_by(internal_external)%>%
+        summarise(`Approved Budget`=sum(`Approved Budget`,na.rm=T),
+                  `Expenditure to Date`=sum(expenditure_to_date,na.rm=T),
+                  `Remaining Budget Projected`=sum(`Variance between remaining approved budget projected spending`,na.rm=T))%>%
+        gather(cat,value,-internal_external)
+      
+      budget_plot2(ds,TRUE)
+```
+
+\newpage
+\blandscape
+
+### Schedule
+```{r,message=FALSE,warning=FALSE,fig.width=12}
+ df<-schedule%>%filter(IP %in% ip_selected()$ips)%>%
+              left_join(all_proj%>%select(IP=IP,internal_external=`Internal or External`))%>%
+              filter(grepl('Start Date|End Date|Go live',Major.Milestone,ignore.case=T))%>%
+              filter(!is.na(Approved_finish_date))
+    
+    if(input$selectdir=='All'){
+      schedule<-schedule%>%
+        filter(grepl('Go live',Major.Milestone,ignore.case=T))
+    }
+
+    timeplot(df,T)
+```
+
+```{r}
+df<-schedule_overview()%>%
+      filter(grepl('Start Date|End Date|Go live',Major.Milestone,ignore.case=T))%>%
+      select(Milestone=Major.Milestone,`Actual/Forecasted Finish Date`=Approved_finish_date)
+    
+knitr::kable(df,format='latex',
+                booktabs= TRUE,
+                longtable=FALSE)
+```
+
+\elandscape
+\newpage

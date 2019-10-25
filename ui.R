@@ -1,7 +1,7 @@
 
 ui<-dashboardPage(
-  dashboardHeader(title=textOutput('header'),
-                  titleWidth=400),
+  dashboardHeader(title=paste0('HPFB IP Dashboard \n as of ',dat),
+                  titleWidth=500),
   
   dashboardSidebar(width=150,
                    sidebarMenu(id='sidebar',
@@ -15,6 +15,7 @@ ui<-dashboardPage(
                      conditionalPanel(
                        condition="input.sidebar == 'overview' ",
                        selectInput('selectdir',label="Select a Directorate",choices=directorate),
+                       #radioButtons('internal','Show internal or external status:',c("Yes","No"),selected="No",inline=TRUE),
                        actionButton('info','View IP Name',icon=icon('eye'))
                      ),
                      
@@ -26,8 +27,16 @@ ui<-dashboardPage(
                      downloadButton('downloadData','Data'),
                      br(),
                      br(),
-                     tags$style(type="text/css", "#downloadreport {color: black;margin-left:10px;}"),
-                     downloadButton('downloadreport','Report'),
+                     conditionalPanel(
+                       condition="input.sidebar == 'individual' ",
+                       tags$style(type="text/css", "#downloadreport_individual {color: black;margin-left:10px;}"),
+                       downloadButton('downloadreport_individual','Report')
+                     ),
+                     conditionalPanel(
+                       condition="input.sidebar == 'overview' ",
+                       tags$style(type="text/css", "#downloadreport_overview {color: black;margin-left:10px;}"),
+                       downloadButton('downloadreport_overview','Report')
+                     ),
                      br(),
                      br(),
                      br(),
@@ -36,6 +45,37 @@ ui<-dashboardPage(
                      actionButton('contact','Contact us',icon=icon('phone')))
   ),
   dashboardBody(
+    
+    tags$head(tags$style(HTML('
+      .main-header .logo {
+        font-family: Arial, Helvetica, sans-serif;
+        font-weight: bold;
+        font-size: 20px;
+      }
+
+     .skin-blue .main-header .logo:hover{
+        background-color: #333000;
+     }
+
+     .skin-blue .main-header .logo{
+        background-color: #333000;
+     }
+
+     .skin-blue .main-header .navbar{
+       background-color: #333000;
+     }
+
+     .skin-blue .main-sidebar {
+       background-color: #333000;
+     }
+
+     .skin-blue .main-sidebar .sidebar .sidebar-menu .active a{
+       background-color: #0278A4;
+
+    .skin-blue .main-sidebar .sidebar .sidebar-menu a:hover{
+       background-color: #0278A4;
+
+    '))),
     
     tabItems(
       
@@ -46,46 +86,16 @@ ui<-dashboardPage(
                        bsModal('modal','IP Name','info',tableOutput('ip_tbl'))
                        
                ),
-              fluidRow(
-               box(title='Overall Project Health',plotOutput('overall2')),
-               box(title='Project Health and Current Stage',plotOutput('overall_stage2'))
-               ),
+              uiOutput('ui_output3'),
+              uiOutput('ui_output1'),
+              uiOutput('ui_output2')
               
-              fluidRow(
-               box(title='Project Functionality',
-                           tabsetPanel(id='tabs',
-                              tabPanel(title='Graph',
-                                  plotlyOutput("function_plt"))
-                           )),
-               box(title='Project Portfolio Budget',
-                       tabsetPanel(
-                           tabPanel(title='Breakdown by Year',
-                                    plotlyOutput('budget_plt2')),
-                           tabPanel(title='Table',
-                                    DT::dataTableOutput('budget_tbl2')),
-                           tabPanel(title='Projections',
-                                    plotOutput('budget_all2'))
-                          )
-                        )
-              ),
-              
-              
-              fluidRow(
-                  box(title='Schedule',width=12,
-                           plotlyOutput('schedule_plt2'),
-                           br(),
-                           br(),
-                           br(),
-                           br(),
-                           DT::dataTableOutput('schedule_tb2'))
-              ),
-              
-              fluidRow(
-                box(title='Project Risks',
-                    plotOutput('projrisk')),
-                box(title='Project Issues',
-                    plotOutput('projissue'))
-              )
+              # fluidRow(
+              #   box(title='Project Risks',
+              #       plotOutput('projrisk')),
+              #   box(title='Project Issues',
+              #       plotOutput('projissue'))
+              # )
               ),
       
     
@@ -95,8 +105,18 @@ ui<-dashboardPage(
           uiOutput('project_name'),
           tags$style(".small-box.bg-red {background-color: #C00000 !important;}"),
           valueBoxOutput('overall'),
-          valueBoxOutput('overall_stage')
+          valueBoxOutput('overall_stage'),
+          valueBoxOutput('internal_external')
           
+     ),
+     
+     fluidRow(
+       column(12,
+              box(title='Schedule',width=NULL,
+                  withSpinner(plotlyOutput('schedule_plt')),
+                  br(),
+                  br(),
+                  DT::dataTableOutput('schedule_tb')))
      ),
      
      fluidRow(
@@ -111,24 +131,15 @@ ui<-dashboardPage(
       box(title='Project Budget',height='500px',
           tabsetPanel(
             tabPanel(title='Breakdown by Year',
-                     plotlyOutput('budget_plt')),
+                     withSpinner(plotlyOutput('budget_plt'))),
             tabPanel(title='Table',
                      DT::dataTableOutput('budget_tbl')),
             tabPanel(title='Projections',
-                     plotOutput('budget_all')))
+                     withSpinner(plotOutput('budget_all'))))
             
        )),
-     
-    fluidRow(
-      column(12,
-      box(title='Schedule',width=NULL,
-            plotlyOutput('schedule_plt'),
-            br(),
-            br(),
-            DT::dataTableOutput('schedule_tb')))
-     ),
     
-    
+  
     fluidRow(
       column(12,
              box(title='Project Risks',width=NULL,
