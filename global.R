@@ -18,7 +18,7 @@ library(scales)
 library(magrittr)
 library(DT)
 
-source('import.R')
+#source('import.R')
 source('functions.R')
 schedule<-read_excel('data.xlsx',3)
 functionality<-read_excel('data.xlsx',1)
