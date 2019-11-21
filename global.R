@@ -18,7 +18,7 @@ library(scales)
 library(magrittr)
 library(DT)
 
-
+source('import.R')
 source('functions.R')
 schedule<-read_excel('data.xlsx',3)
 functionality<-read_excel('data.xlsx',1)
@@ -46,7 +46,7 @@ dat<-substring(file.info('data.xlsx')$mtime,1,11)
 capital<-read_excel('data.xlsx',8)
 capital$var<-'Project Authority'
 budget_yr%<>%left_join(capital)
-budget_yr$value<-ifelse(is.na(budget_yr$value),0,budget_yr$value)
+budget_yr$value<-ifelse(is.na(budget_yr$value),0,as.numeric(budget_yr$value))
 budget_yr$capital<-ifelse(is.na(budget_yr$capital),0,budget_yr$capital)
 budget_yr$non_capital<-budget_yr$value-budget_yr$capital
 budget_yr$year<-as.numeric(substr(budget_yr$Year,1,4))
