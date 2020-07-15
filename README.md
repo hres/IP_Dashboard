@@ -1,5 +1,7 @@
 # IP_Dashboard
 
+![](https://github.com/hres/IP_Dashboard/blob/master/App_snapshot.png?raw=true)
+
 The IP_Dashboard displays information on budget, schedule, project health and stage for all IP projects at Health Product and Food Branch (HPFB). The dashboard was built using R Shiny.
 
 The applications consists of:
